@@ -2,765 +2,492 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Porovnání PDF Výkresů - Trimble Connect</title>
-    <script src="https://cdn.connect.trimble.com/trimble-connect-project-workspace-api/3.0/trimble-connect-project-workspace-api.js"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA Meta tagy -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Zaměření">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Požadavek na zaměření - Stavbyvedoucí">
+    
+    <title>Požadavek na zaměření</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBvxb5hZGF2ZWsgbmEgemFtxJvFmWVuw60iLAogICJzaG9ydF9uYW1lIjogIlphbcSbxZllbsOtIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmZmZmIiwKICAidGhlbWVfY29sb3IiOiAiIzI1NjNlYiIsCiAgIm9yaWVudGF0aW9uIjogInBvcnRyYWl0IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxOTInIGhlaWdodD0nMTkyJyB2aWV3Qm94PScwIDAgMTkyIDE5MiclM0UlM0NyZWN0IHdpZHRoPScxOTInIGhlaWdodD0nMTkyJyBmaWxsPSclMjMyNTYzZWInIHJ4PScyNCcvJTNFJTNDdGV4dCB4PScxMCcgeT0nMTIwJyBmb250LXNpemU9JzgwJyBmaWxsPSclMjNmZmZmZmYnIGZvbnQtZmFtaWx5PSdBcmlhbCclM0UlRjAlOUYlOTMlOEIlM0MvdGV4dCUzRSUzQy9zdmclM0UiLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9LAogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbCwlM0NzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB3aWR0aD0nNTEyJyBoZWlnaHQ9JzUxMicgdmlld0JveD0nMCAwIDUxMiA1MTInJTNFJTNDcmVjdCB3aWR0aD0nNTEyJyBoZWlnaHQ9JzUxMicgZmlsbD0nJTIzMjU2M2ViJyByeD0nNjQnLyUzRSUzQ3RleHQgeD0nMzAnIHk9JzMzMCcgZm9udC1zaXplPScyMjAnIGZpbGw9JyUyM2ZmZmZmZicgZm9udC1mYW1pbHk9J0FyaWFsJyUzRSVGMCU5RiU5MyU4QiUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgIH0KICBdCn0=">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
+        body { 
+            margin: 0; 
             padding: 0;
-            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+        input, textarea, select {
+            -webkit-user-select: text;
+            user-select: text;
+            font-size: 16px; /* Zabrání zoom na iOS */
         }
-
-        .tc-container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tc-header {
-            background: #0066cc;
+        /* PWA instalační banner */
+        .install-prompt {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
             color: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 16px;
+            display: none;
+            z-index: 9999;
+            animation: slideUp 0.3s ease-out;
         }
-
-        .tc-header h1 {
-            font-size: 20px;
-            font-weight: 600;
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
-
-        .tc-header p {
-            font-size: 13px;
-            opacity: 0.9;
-            margin-top: 5px;
-        }
-
-        .app-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .upload-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .upload-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .file-selector {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: #fafafa;
-        }
-
-        .file-selector:hover {
-            border-color: #0066cc;
-            background: #f0f8ff;
-        }
-
-        .file-selector.has-file {
-            border-color: #27ae60;
-            background: #f0fff4;
-        }
-
-        .file-label {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .tc-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        .file-info {
-            font-size: 14px;
-            color: #27ae60;
-            margin-top: 10px;
-            font-weight: 600;
-        }
-
-        .file-path {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 5px;
-            word-break: break-all;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: #0066cc;
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #0052a3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
-        }
-
-        .btn-secondary {
-            background: #95a5a6;
-            color: white;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #7f8c8d;
-        }
-
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: #229954;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .slider-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .slider-control label {
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .slider-control input[type="range"] {
-            flex: 1;
-            height: 6px;
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-            background: #ddd;
-        }
-
-        .slider-control input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #0066cc;
-            cursor: pointer;
-        }
-
-        .slider-value {
-            font-weight: 600;
-            color: #0066cc;
-            min-width: 40px;
-            text-align: right;
-        }
-
-        .result-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ecf0f1;
-        }
-
-        .tab {
-            padding: 12px 24px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #7f8c8d;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            color: #0066cc;
-            border-bottom-color: #0066cc;
-        }
-
-        .canvas-container {
-            position: relative;
-            overflow: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #f9f9f9;
-            max-height: 60vh;
-        }
-
-        canvas {
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #0066cc;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .page-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .page-info {
-            font-size: 14px;
-            color: #7f8c8d;
-        }
-
-        .error {
-            background: #fee;
-            border: 1px solid #fcc;
-            padding: 15px;
-            border-radius: 6px;
-            color: #c00;
-            margin-bottom: 20px;
-        }
-
-        .success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 15px;
-            border-radius: 6px;
-            color: #155724;
-            margin-bottom: 20px;
-        }
-
-        .tc-info {
-            background: #e3f2fd;
-            border-left: 4px solid #0066cc;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-
-        .tc-info h3 {
-            margin-bottom: 8px;
-            color: #0052a3;
-            font-size: 16px;
-        }
-
-        .tc-info ul {
-            margin-left: 20px;
-            color: #555;
-        }
-
-        .tc-info li {
-            margin-bottom: 5px;
+        /* Skrýt scrollbar ale ponechat funkcionalitu */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
         }
     </style>
 </head>
-<body>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100">
+    <!-- PWA Instalační výzva -->
+    <div id="installPrompt" class="install-prompt">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+                <p class="font-bold text-sm">📱 Nainstalovat aplikaci</p>
+                <p class="text-xs opacity-90">Přidat na plochu pro rychlý přístup</p>
+            </div>
+            <button 
+                onclick="installApp()"
+                class="px-4 py-2 bg-blue-600 rounded-lg font-bold text-sm whitespace-nowrap"
+            >
+                Instalovat
+            </button>
+            <button 
+                onclick="closeInstallPrompt()"
+                class="px-3 py-2 text-white/70 text-xl"
+            >
+                ✕
+            </button>
+        </div>
+    </div>
+
     <div id="root"></div>
+    
+    <script type="module">
+        // Konfigurace
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxMcVSWoZgeFU_jE2RUp_INEhZeAOo_T6qAZywQHUg3TTZ71acgvM9CjGQy4eAnXDTLPQ/exec';
+        const EMAIL_CONFIG = {
+            serviceId: 'service_suouxkq',
+            templateId: 'template_dk0t1ks',
+            publicKey: 'CJWpbTlUQfegnb7AK',
+            geodetEmail: 'martina.vesela@strabag.com'
+        };
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        emailjs.init(EMAIL_CONFIG.publicKey);
 
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const stavebniObjekty = [
+            'PS 11-01-11', 'PS 11-01-72', 'PS 11-02-11', 'PS 11-02-21', 'PS 11-02-31',
+            'PS 11-02-41', 'PS 00-02-51', 'PS 11-02-52', 'PS 11-02-53', 'PS 11-02-54',
+            'PS 11-02-61', 'PS 11-02-62', 'PS 11-02-71', 'PS 11-02-72', 'PS 11-02-73',
+            'PS 11-03-11', 'PS 11-03-12', 'PS 11-03-51', 'PS 11-03-52', 'PS 11-03-53',
+            'PS 11-03-54', 'PS 11-04-11', 'PS 11-04-21', 'PS 11-04-51', 'SO 11-10-01',
+            'SO 11-11-01', 'SO 11-14-01', 'SO 11-12-01', 'SO 11-12-02', 'SO 11-12-03',
+            'SO 11-13-01', 'SO 11-22-01', 'SO 11-22-02', 'SO 11-23-01.1', 'SO 11-23-01.2',
+            'SO 11-24-01', 'SO 11-24-02', 'SO 11-25-01', 'SO 11-25-02', 'SO 11-25-03',
+            'SO 11-31-01', 'SO 11-31-02', 'SO 11-31-03', 'SO 11-31-04', 'SO 11-31-05',
+            'SO 11-31-06', 'SO 11-32-01', 'SO 11-32-02', 'SO 11-32-03', 'SO 11-32-04',
+            'SO 11-50-01', 'SO 11-50-02', 'SO 11-50-03', 'SO 11-50-05', 'SO 11-60-01',
+            'SO 11-60-02', 'SO 11-71-01', 'SO 11-71-02', 'SO 11-72-01', 'SO 11-72-02',
+            'SO 11-72-03', 'SO 11-72-04', 'SO 11-74-01', 'SO-11-74-02', 'SO 11-77-01',
+            'SO 11-78-01', 'SO 11-78-02', 'SO 11-79-01', 'SO 11-79-02', 'SO 11-81-01',
+            'SO 11-81-02', 'SO 11-84-01', 'SO 11-86-01', 'SO 11-86-02', 'SO 11-86-03',
+            'SO 11-86-04', 'SO 11-86-05', 'SO 11-87-01', 'SO 11-88-01', 'SO 11-92-01',
+            'SO 90-90', 'SO 98-98'
+        ];
 
-        function TrimbleConnectPDFCompare() {
-            const [tcApi, setTcApi] = useState(null);
-            const [file1, setFile1] = useState(null);
-            const [file2, setFile2] = useState(null);
-            const [processing, setProcessing] = useState(false);
-            const [currentPage, setCurrentPage] = useState(1);
-            const [totalPages, setTotalPages] = useState(0);
-            const [activeTab, setActiveTab] = useState('difference');
-            const [images, setImages] = useState({
-                pdf1: null,
-                pdf2: null,
-                difference: null
-            });
-            const [sensitivity, setSensitivity] = useState(30);
-            const [zoom, setZoom] = useState(100);
-            const [error, setError] = useState(null);
-            const [success, setSuccess] = useState(null);
+        let formData = {
+            objektCislo: '',
+            jmeno: '',
+            email: '',
+            poznamka: '',
+            pozadovaneDatum: '',
+            pozadovanyCas: '',
+            priloha: null,
+            prilohaNazev: '',
+            prilohaMimeType: ''
+        };
 
-            const canvasRef = useRef(null);
+        // PWA Install prompt
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Zobrazit vlastní instalační výzvu po 3 sekundách
+            setTimeout(() => {
+                document.getElementById('installPrompt').style.display = 'block';
+            }, 3000);
+        });
 
-            useEffect(() => {
-                // Inicializace Trimble Connect API
-                if (window.TrimbleConnectWorkspace) {
-                    const api = new window.TrimbleConnectWorkspace();
-                    api.connect().then(() => {
-                        setTcApi(api);
-                        console.log('Trimble Connect API připojeno');
-                    }).catch(err => {
-                        setError('Nepodařilo se připojit k Trimble Connect API: ' + err.message);
-                    });
-                }
-            }, []);
+        window.installApp = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Instalace: ${outcome}`);
+                deferredPrompt = null;
+            }
+            closeInstallPrompt();
+        };
 
-            const selectFileFromTC = async (fileNumber) => {
-                if (!tcApi) {
-                    setError('Trimble Connect API není připojeno');
-                    return;
-                }
+        window.closeInstallPrompt = () => {
+            document.getElementById('installPrompt').style.display = 'none';
+        };
 
-                try {
-                    // Otevření file pickeru z Trimble Connect
-                    const selectedFile = await tcApi.ui.selectFile({
-                        title: `Vyberte ${fileNumber === 1 ? 'původní' : 'nový'} výkres`,
-                        filter: ['.pdf'],
-                        multiSelect: false
-                    });
+        // Skrýt instalační prompt po instalaci
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA byla nainstalována');
+            closeInstallPrompt();
+        });
 
-                    if (selectedFile) {
-                        // Stažení souboru z TC
-                        const fileBlob = await tcApi.files.download(selectedFile.id);
-                        const file = new File([fileBlob], selectedFile.name, { type: 'application/pdf' });
-                        
-                        const fileData = {
-                            file: file,
-                            name: selectedFile.name,
-                            path: selectedFile.path,
-                            id: selectedFile.id
-                        };
-
-                        if (fileNumber === 1) {
-                            setFile1(fileData);
-                        } else {
-                            setFile2(fileData);
-                        }
-                        
-                        setError(null);
-                    }
-                } catch (err) {
-                    setError('Chyba při výběru souboru z Trimble Connect: ' + err.message);
-                    console.error(err);
-                }
-            };
-
-            const renderPDFPage = async (file, pageNum) => {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                const page = await pdf.getPage(pageNum);
-                
-                const viewport = page.getViewport({ scale: 2.0 });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                
-                await page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                }).promise;
-                
-                return {
-                    canvas: canvas,
-                    totalPages: pdf.numPages
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                formData.prilohaNazev = file.name;
+                formData.prilohaMimeType = file.type;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    formData.priloha = reader.result;
+                    render();
                 };
-            };
+                reader.readAsDataURL(file);
+            }
+        }
 
-            const compareImages = (canvas1, canvas2, sensitivity) => {
-                const width = Math.max(canvas1.width, canvas2.width);
-                const height = Math.max(canvas1.height, canvas2.height);
+        async function uploadFileToDrive(fileData, fileName, mimeType) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'uploadFile',
+                        fileData: fileData,
+                        fileName: fileName,
+                        mimeType: mimeType,
+                        objektCislo: formData.objektCislo // Přidat číslo objektu
+                    })
+                });
+                const result = await response.json();
                 
-                const resultCanvas = document.createElement('canvas');
-                resultCanvas.width = width;
-                resultCanvas.height = height;
-                const resultCtx = resultCanvas.getContext('2d');
-                
-                resultCtx.drawImage(canvas2, 0, 0);
-                const imageData2 = resultCtx.getImageData(0, 0, width, height);
-                
-                for (let i = 0; i < imageData2.data.length; i += 4) {
-                    const gray = imageData2.data[i] * 0.3 + imageData2.data[i + 1] * 0.59 + imageData2.data[i + 2] * 0.11;
-                    imageData2.data[i] = gray;
-                    imageData2.data[i + 1] = gray;
-                    imageData2.data[i + 2] = gray;
+                if (result.success) {
+                    return result.fileId;
+                } else {
+                    console.error('Chyba při nahrávání:', result.error);
+                    return null;
                 }
-                resultCtx.putImageData(imageData2, 0, 0);
+            } catch (error) {
+                console.error('Chyba:', error);
+                return null;
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (!formData.objektCislo || !formData.jmeno || !formData.email || !formData.poznamka || !formData.pozadovaneDatum || !formData.pozadovanyCas) {
+                alert('❌ Prosím vyplňte všechna povinná pole');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Odesílám...';
+
+            try {
+                let prilohaFileId = '';
                 
-                const ctx1 = canvas1.getContext('2d');
-                const ctx2 = canvas2.getContext('2d');
-                
-                const data1 = ctx1.getImageData(0, 0, canvas1.width, canvas1.height);
-                const data2 = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
-                
-                const overlayCanvas = document.createElement('canvas');
-                overlayCanvas.width = width;
-                overlayCanvas.height = height;
-                const overlayCtx = overlayCanvas.getContext('2d');
-                const overlayData = overlayCtx.createImageData(width, height);
-                
-                for (let y = 0; y < Math.min(canvas1.height, canvas2.height); y++) {
-                    for (let x = 0; x < Math.min(canvas1.width, canvas2.width); x++) {
-                        const i1 = (y * canvas1.width + x) * 4;
-                        const i2 = (y * canvas2.width + x) * 4;
-                        const iResult = (y * width + x) * 4;
-                        
-                        const r1 = data1.data[i1];
-                        const g1 = data1.data[i1 + 1];
-                        const b1 = data1.data[i1 + 2];
-                        
-                        const r2 = data2.data[i2];
-                        const g2 = data2.data[i2 + 1];
-                        const b2 = data2.data[i2 + 2];
-                        
-                        const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
-                        
-                        if (diff > sensitivity * 3) {
-                            overlayData.data[iResult] = 255;
-                            overlayData.data[iResult + 1] = 0;
-                            overlayData.data[iResult + 2] = 0;
-                            overlayData.data[iResult + 3] = 180;
-                        }
+                if (formData.priloha) {
+                    submitBtn.textContent = 'Nahrávám přílohu...';
+                    prilohaFileId = await uploadFileToDrive(
+                        formData.priloha, 
+                        formData.prilohaNazev,
+                        formData.prilohaMimeType
+                    );
+                    
+                    if (!prilohaFileId) {
+                        alert('⚠️ Nepodařilo se nahrát přílohu. Pokračovat bez přílohy?');
                     }
                 }
+
+                submitBtn.textContent = 'Ukládám požadavek...';
+                const id = Date.now();
+                const datum = new Date().toLocaleString('cs-CZ');
                 
-                overlayCtx.putImageData(overlayData, 0, 0);
-                resultCtx.drawImage(overlayCanvas, 0, 0);
-                
-                return resultCanvas;
-            };
+                const params = new URLSearchParams({
+                    action: 'add',
+                    id: id,
+                    objektCislo: formData.objektCislo,
+                    jmeno: formData.jmeno,
+                    email: formData.email,
+                    poznamka: formData.poznamka,
+                    pozadovaneDatum: formData.pozadovaneDatum,
+                    pozadovanyCas: formData.pozadovanyCas,
+                    datumPozadavku: datum,
+                    stav: 'Nový',
+                    pridelenyGeodet: '',
+                    typZamereni: '',
+                    poznamkaGeodeta: '',
+                    datumDokonceni: '',
+                    prilohaFileId: prilohaFileId,
+                    potvrzenoGeodet: 'Ne'
+                });
 
-            const processComparison = async () => {
-                if (!file1 || !file2) {
-                    setError('Prosím vyberte oba PDF soubory z Trimble Connect');
-                    return;
-                }
+                const response = await fetch(`${API_URL}?${params}`);
+                const result = await response.json();
 
-                setProcessing(true);
-                setError(null);
+                if (result.success) {
+                    submitBtn.textContent = 'Odesílám email...';
+                    await emailjs.send(
+                        EMAIL_CONFIG.serviceId,
+                        EMAIL_CONFIG.templateId,
+                        {
+                            to_email: EMAIL_CONFIG.geodetEmail,
+                            from_name: formData.jmeno,
+                            from_email: formData.email,
+                            objekt_cislo: formData.objektCislo,
+                            poznamka: formData.poznamka,
+                            datum: datum,
+                            pozadovane_datum: formData.pozadovaneDatum,
+                            pozadovany_cas: formData.pozadovanyCas,
+                            ma_prilohu: formData.priloha ? 'Ano - ' + formData.prilohaNazev : 'Ne'
+                        }
+                    );
 
-                try {
-                    const result1 = await renderPDFPage(file1.file, currentPage);
-                    const result2 = await renderPDFPage(file2.file, currentPage);
+                    alert('✅ Požadavek byl úspěšně odeslán!');
                     
-                    setTotalPages(Math.max(result1.totalPages, result2.totalPages));
-                    
-                    const differenceCanvas = compareImages(result1.canvas, result2.canvas, sensitivity);
-                    
-                    setImages({
-                        pdf1: result1.canvas.toDataURL(),
-                        pdf2: result2.canvas.toDataURL(),
-                        difference: differenceCanvas.toDataURL()
-                    });
-                } catch (err) {
-                    setError('Chyba při zpracování PDF: ' + err.message);
-                    console.error(err);
-                } finally {
-                    setProcessing(false);
-                }
-            };
-
-            useEffect(() => {
-                if (images.difference && canvasRef.current) {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = canvasRef.current;
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width * (zoom / 100);
-                        canvas.height = img.height * (zoom / 100);
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    formData = {
+                        objektCislo: '',
+                        jmeno: '',
+                        email: '',
+                        poznamka: '',
+                        pozadovaneDatum: '',
+                        pozadovanyCas: '',
+                        priloha: null,
+                        prilohaNazev: '',
+                        prilohaMimeType: ''
                     };
-                    img.src = activeTab === 'difference' ? images.difference : 
-                              activeTab === 'pdf1' ? images.pdf1 : images.pdf2;
+                    render();
+                } else {
+                    throw new Error('Chyba při ukládání');
                 }
-            }, [activeTab, images, zoom]);
+            } catch (error) {
+                console.error('Chyba:', error);
+                alert('❌ Nepodařilo se odeslat požadavek. Zkuste to znovu.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Odeslat požadavek';
+            }
+        }
 
-            const handlePageChange = (direction) => {
-                const newPage = currentPage + direction;
-                if (newPage >= 1 && newPage <= totalPages) {
-                    setCurrentPage(newPage);
-                }
-            };
-
-            useEffect(() => {
-                if (file1 && file2 && currentPage) {
-                    processComparison();
-                }
-            }, [currentPage, sensitivity]);
-
-            const saveToTrimbleConnect = async () => {
-                if (!images.difference || !tcApi) return;
-
-                try {
-                    setProcessing(true);
-                    setError(null);
-
-                    // Převod canvas na blob
-                    const blob = await new Promise(resolve => {
-                        canvasRef.current.toBlob(resolve, 'image/png');
-                    });
-
-                    // Vytvoření názvu souboru
-                    const fileName = `Porovnani_${file1.name.replace('.pdf', '')}_vs_${file2.name.replace('.pdf', '')}_str${currentPage}.png`;
-
-                    // Upload do Trimble Connect
-                    const uploadResult = await tcApi.files.upload({
-                        file: new File([blob], fileName, { type: 'image/png' }),
-                        path: '/Porovnání výkresů/'
-                    });
-
-                    setSuccess(`Soubor ${fileName} byl úspěšně uložen do Trimble Connect!`);
-                    setTimeout(() => setSuccess(null), 5000);
-                } catch (err) {
-                    setError('Chyba při ukládání do Trimble Connect: ' + err.message);
-                } finally {
-                    setProcessing(false);
-                }
-            };
-
-            const downloadLocal = () => {
-                if (images.difference) {
-                    const link = document.createElement('a');
-                    link.download = `porovnani-strana-${currentPage}.png`;
-                    link.href = images.difference;
-                    link.click();
-                }
-            };
-
-            return (
-                <div className="tc-container">
-                    <div className="tc-header">
-                        <h1>📊 Porovnání PDF Výkresů</h1>
-                        <p>Trimble Connect Extension</p>
-                    </div>
-
-                    <div className="app-container">
-                        {error && <div className="error">{error}</div>}
-                        {success && <div className="success">{success}</div>}
-
-                        <div className="upload-section">
-                            <div className="upload-grid">
-                                <div className={`file-selector ${file1 ? 'has-file' : ''}`} 
-                                     onClick={() => selectFileFromTC(1)}>
-                                    <div className="tc-icon">📁</div>
-                                    <span className="file-label">Původní výkres (PDF 1)</span>
-                                    <div>Klikněte pro výběr z Trimble Connect</div>
-                                    {file1 && (
-                                        <>
-                                            <div className="file-info">✓ {file1.name}</div>
-                                            <div className="file-path">{file1.path}</div>
-                                        </>
-                                    )}
-                                </div>
-
-                                <div className={`file-selector ${file2 ? 'has-file' : ''}`}
-                                     onClick={() => selectFileFromTC(2)}>
-                                    <div className="tc-icon">📁</div>
-                                    <span className="file-label">Nový výkres (PDF 2)</span>
-                                    <div>Klikněte pro výběr z Trimble Connect</div>
-                                    {file2 && (
-                                        <>
-                                            <div className="file-info">✓ {file2.name}</div>
-                                            <div className="file-path">{file2.path}</div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="controls">
-                                <button 
-                                    className="btn btn-primary"
-                                    onClick={processComparison}
-                                    disabled={!file1 || !file2 || processing || !tcApi}
-                                >
-                                    {processing ? '⏳ Zpracovávám...' : '🔍 Porovnat'}
-                                </button>
-
-                                {totalPages > 0 && (
-                                    <div className="page-selector">
-                                        <button 
-                                            className="btn btn-secondary"
-                                            onClick={() => handlePageChange(-1)}
-                                            disabled={currentPage <= 1 || processing}
-                                        >
-                                            ← Předchozí
-                                        </button>
-                                        <span className="page-info">
-                                            Strana {currentPage} z {totalPages}
-                                        </span>
-                                        <button 
-                                            className="btn btn-secondary"
-                                            onClick={() => handlePageChange(1)}
-                                            disabled={currentPage >= totalPages || processing}
-                                        >
-                                            Další →
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div className="slider-control">
-                                    <label>Citlivost:</label>
-                                    <input
-                                        type="range"
-                                        min="5"
-                                        max="100"
-                                        value={sensitivity}
-                                        onChange={(e) => setSensitivity(Number(e.target.value))}
-                                        disabled={processing}
-                                    />
-                                    <span className="slider-value">{sensitivity}</span>
-                                </div>
-
-                                <div className="slider-control">
-                                    <label>Zoom:</label>
-                                    <input
-                                        type="range"
-                                        min="25"
-                                        max="200"
-                                        step="25"
-                                        value={zoom}
-                                        onChange={(e) => setZoom(Number(e.target.value))}
-                                    />
-                                    <span className="slider-value">{zoom}%</span>
-                                </div>
-
-                                {images.difference && (
-                                    <>
-                                        <button 
-                                            className="btn btn-success"
-                                            onClick={saveToTrimbleConnect}
-                                            disabled={processing || !tcApi}
-                                        >
-                                            💾 Uložit do TC
-                                        </button>
-                                        <button 
-                                            className="btn btn-primary"
-                                            onClick={downloadLocal}
-                                        >
-                                            💾 Stáhnout lokálně
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+        function render() {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div class="min-h-screen p-4 pb-8">
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Hlavička -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <h1 class="text-2xl font-bold text-gray-800 mb-2">
+                                📋 Požadavek na zaměření
+                            </h1>
+                            <p class="text-sm text-gray-600">
+                                Vyplňte formulář pro vytvoření nového požadavku
+                            </p>
                         </div>
 
-                        {processing && (
-                            <div className="loading">
-                                <div className="spinner"></div>
-                                <div>Zpracovávám PDF soubory...</div>
+                        <!-- Formulář -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6 space-y-5">
+                            <!-- Stavební objekt -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    🏗️ Stavební objekt *
+                                </label>
+                                <select 
+                                    id="objektCislo"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                >
+                                    <option value="">-- Vyberte objekt --</option>
+                                    ${stavebniObjekty.map(obj => `
+                                        <option value="${obj}" ${formData.objektCislo === obj ? 'selected' : ''}>
+                                            ${obj}
+                                        </option>
+                                    `).join('')}
+                                </select>
                             </div>
-                        )}
 
-                        {images.difference && !processing && (
-                            <div className="result-section">
-                                <div className="tabs">
-                                    <button 
-                                        className={`tab ${activeTab === 'difference' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('difference')}
-                                    >
-                                        🔴 Rozdíly
-                                    </button>
-                                    <button 
-                                        className={`tab ${activeTab === 'pdf1' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('pdf1')}
-                                    >
-                                        📄 PDF 1
-                                    </button>
-                                    <button 
-                                        className={`tab ${activeTab === 'pdf2' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('pdf2')}
-                                    >
-                                        📄 PDF 2
-                                    </button>
-                                </div>
-
-                                <div className="canvas-container">
-                                    <canvas ref={canvasRef}></canvas>
-                                </div>
+                            <!-- Jméno -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    👤 Vaše jméno *
+                                </label>
+                                <input 
+                                    type="text"
+                                    id="jmeno"
+                                    value="${formData.jmeno}"
+                                    placeholder="Jan Novák"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                />
                             </div>
-                        )}
 
-                        <div className="tc-info">
-                            <h3>ℹ️ Jak používat Trimble Connect Extension:</h3>
-                            <ul>
-                                <li><strong>Výběr souborů:</strong> Klikněte na pole a vyberte PDF soubory přímo z vašeho TC projektu</li>
-                                <li><strong>Porovnání:</strong> Po výběru obou souborů klikněte na "Porovnat"</li>
-                                <li><strong>Uložení:</strong> Výsledky můžete uložit zpět do TC nebo stáhnout lokálně</li>
-                                <li><strong>Navigace:</strong> Procházejte jednotlivé stránky pomocí tlačítek</li>
-                                <li><strong>Citlivost:</strong> Upravte podle potřeby detekce rozdílů</li>
-                            </ul>
+                            <!-- Email -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    ✉️ Váš email *
+                                </label>
+                                <input 
+                                    type="email"
+                                    id="email"
+                                    value="${formData.email}"
+                                    placeholder="jan.novak@strabag.com"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                />
+                            </div>
+
+                            <!-- Poznámka -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    📝 Co je třeba zaměřit *
+                                </label>
+                                <textarea 
+                                    id="poznamka"
+                                    rows="4"
+                                    placeholder="Popište detailně, co potřebujete zaměřit..."
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                >${formData.poznamka}</textarea>
+                            </div>
+
+                            <!-- Datum příjezdu -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    📅 Požadované datum příjezdu geodeta *
+                                </label>
+                                <input 
+                                    type="date"
+                                    id="pozadovaneDatum"
+                                    value="${formData.pozadovaneDatum}"
+                                    min="${new Date().toISOString().split('T')[0]}"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                />
+                            </div>
+
+                            <!-- Čas příjezdu -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    🕐 Požadovaný čas příjezdu *
+                                </label>
+                                <input 
+                                    type="time"
+                                    id="pozadovanyCas"
+                                    value="${formData.pozadovanyCas}"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                                />
+                            </div>
+
+                            <!-- Příloha -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    📎 Příloha (volitelné)
+                                </label>
+                                <input 
+                                    type="file"
+                                    id="priloha"
+                                    accept="image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx"
+                                    capture="environment"
+                                    onchange="handleFileChange(event)"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-base"
+                                />
+                                <p class="text-xs text-gray-500 mt-1">
+                                    PDF, obrázky, Word, Excel, TXT...
+                                </p>
+                                ${formData.priloha ? `
+                                    <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                                        <p class="text-sm text-green-700 font-semibold">
+                                            ✓ Přiloženo: ${formData.prilohaNazev}
+                                        </p>
+                                        ${formData.priloha.startsWith('data:image') ? `
+                                            <img 
+                                                src="${formData.priloha}" 
+                                                alt="Náhled" 
+                                                class="mt-2 w-full max-w-xs rounded-lg border-2 border-green-200"
+                                            />
+                                        ` : ''}
+                                        <button
+                                            onclick="removePriloha()"
+                                            class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                                        >
+                                            Odstranit přílohu
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Tlačítko -->
+                            <button 
+                                onclick="submitForm(event)"
+                                id="submitBtn"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl text-lg shadow-lg transition-all transform active:scale-95"
+                            >
+                                🚀 Odeslat požadavek
+                            </button>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                            <p class="text-sm text-blue-800">
+                                <strong>ℹ️ Info:</strong> Po odeslání bude hlavní geodet informován emailem. Příloha se uloží na Google Drive.
+                            </p>
                         </div>
                     </div>
                 </div>
-            );
+            `;
+
+            document.getElementById('objektCislo').onchange = (e) => {
+                formData.objektCislo = e.target.value;
+            };
+            document.getElementById('jmeno').oninput = (e) => {
+                formData.jmeno = e.target.value;
+            };
+            document.getElementById('email').oninput = (e) => {
+                formData.email = e.target.value;
+            };
+            document.getElementById('poznamka').oninput = (e) => {
+                formData.poznamka = e.target.value;
+            };
+            document.getElementById('pozadovaneDatum').onchange = (e) => {
+                formData.pozadovaneDatum = e.target.value;
+            };
+            document.getElementById('pozadovanyCas').onchange = (e) => {
+                formData.pozadovanyCas = e.target.value;
+            };
         }
 
-        ReactDOM.render(<TrimbleConnectPDFCompare />, document.getElementById('root'));
+        window.submitForm = handleSubmit;
+        window.handleFileChange = handleFileUpload;
+        window.removePriloha = () => {
+            formData.priloha = null;
+            formData.prilohaNazev = '';
+            formData.prilohaMimeType = '';
+            render();
+        };
+
+        render();
     </script>
 </body>
 </html>
