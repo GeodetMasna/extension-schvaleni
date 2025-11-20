@@ -37,7 +37,7 @@
   ],
   "extensions": [
     {
-      "type": "project-extension",
+      "type": "workspace",
       "name": "Schvalování Dokumentace",
       "url": "index.html",
       "title": "Spravuj schvalovací procesy pro projektovou dokumentaci",
