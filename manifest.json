@@ -40,7 +40,6 @@
       "type": "project-extension",
       "name": "Schvalování Dokumentace",
       "url": "./index.html",
-      "icon": "./assets/icon-192.png",
       "title": "Spravuj schvalovací procesy pro projektovou dokumentaci",
       "description": "Vytvářej schvalovací řetězce s automatickými BCF notifikacemi a přesunem dokumentace",
       "category": "Project Management"
