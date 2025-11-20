@@ -1,5 +1,7 @@
 {
   "title": "Schvalování Dokumentace",
   "url": "https://geodetmasna.github.io/extension-schvaleni/index.html",
+  "icon": "https://geodetmasna.github.io/extension-schvaleni/icon.png",
   "description": "Extension pro správu schvalovacích workflow projektové dokumentace",
+  "infoUrl": "https://geodetmasna.github.io/extension-schvaleni/help.html"
 }
