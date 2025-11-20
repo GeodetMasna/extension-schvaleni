@@ -1,13 +1,5 @@
 {
-  "id": "test-extension",
-  "name": "Testovací Rozšíření",
-  "version": "1.0.0",
-  "description": "Testuje zobrazování v TC",
-  "extensions": [
-    {
-      "type": "workspace",
-      "name": "Testovací Rozšíření",
-      "url": "index.html"
-    }
-  ]
+  "title": "Schvalování Dokumentace",
+  "url": "https://geodetmasna.github.io/extension-schvaleni/index.html",
+  "description": "Extension pro správu schvalovacích workflow projektové dokumentace",
 }
