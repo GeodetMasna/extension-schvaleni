@@ -1,6 +1,13 @@
 {
-  "title": "Schvalování Dokumentace",
-  "url": "https://geodetmasna.github.io/extension-schvaleni/index.html",
-  "description": "Extension pro správu schvalovacích workflow projektové dokumentace v Trimble Connect",
-  "infoUrl": "https://geodetmasna.github.io/extension-schvaleni/help.html"
+  "id": "approval-workflow-extension",
+  "name": "Schvalovani",
+  "version": "1.0.0",
+  "description": "Test",
+  "extensions": [
+    {
+      "type": "workspace",
+      "name": "Schvalovani",
+      "url": "index.html"
+    }
+  ]
 }
