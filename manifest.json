@@ -1,12 +1,12 @@
 {
-  "id": "approval-workflow-extension",
-  "name": "Schvalovani",
+  "id": "test-extension",
+  "name": "Testovací Rozšíření",
   "version": "1.0.0",
-  "description": "Test",
+  "description": "Testuje zobrazování v TC",
   "extensions": [
     {
       "type": "workspace",
-      "name": "Schvalovani",
+      "name": "Testovací Rozšíření",
       "url": "index.html"
     }
   ]
