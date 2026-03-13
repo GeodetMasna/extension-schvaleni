@@ -1,10 +1,1356 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <title>Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIM Koordinátor · Geodetická zaměření</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0d1117;
+            --bg2:       #161b22;
+            --bg3:       #1c2430;
+            --surface:   #21262d;
+            --surface2:  #2d333b;
+            --border:    #30363d;
+            --border2:   #3d444d;
+
+            --teal:      #0ea5e9;
+            --teal-dim:  #0369a1;
+            --teal-glow: rgba(14,165,233,.15);
+            --amber:     #f59e0b;
+            --amber-dim: rgba(245,158,11,.15);
+            --red:       #ef4444;
+            --red-dim:   rgba(239,68,68,.15);
+            --green:     #22c55e;
+            --green-dim: rgba(34,197,94,.15);
+            --purple:    #a855f7;
+
+            --text:      #e6edf3;
+            --text2:     #8b949e;
+            --text3:     #484f58;
+
+            --font-display: 'Barlow Condensed', sans-serif;
+            --font-body:    'Barlow', sans-serif;
+            --font-mono:    'Space Mono', monospace;
+
+            --radius:    10px;
+            --radius-lg: 14px;
+            --shadow:    0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
+        }
+
+        body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        h1,h2,h3,h4 { font-family: var(--font-display); letter-spacing: -.3px; }
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+        /* ── LAYOUT ── */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 230px; background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            position: fixed; top:0; left:0; bottom:0; z-index: 100;
+        }
+        .sidebar-header {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-cube {
+            width: 34px; height: 34px; background: var(--teal);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(14,165,233,.4);
+        }
+        .logo-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.1; }
+        .logo-role { font-size: 10px; font-weight: 500; color: var(--teal); letter-spacing: 1.5px; text-transform: uppercase; }
+
+        .sidebar-nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+        .nav-section { margin-bottom: 20px; }
+        .nav-section-label {
+            font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--text3); padding: 0 8px; margin-bottom: 4px;
+        }
+        .nav-btn {
+            display: flex; align-items: center; gap: 9px; width: 100%;
+            padding: 8px 10px; border-radius: 8px; border: none; background: transparent;
+            color: var(--text2); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
+            cursor: pointer; transition: all .15s; text-align: left; margin-bottom: 1px;
+        }
+        .nav-btn:hover { background: var(--surface); color: var(--text); }
+        .nav-btn.active { background: var(--teal-glow); color: var(--teal); border-left: 2px solid var(--teal); padding-left: 8px; }
+        .nav-btn .ni { font-size: 15px; width: 18px; text-align: center; }
+        .nav-chip {
+            margin-left: auto; font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+            padding: 1px 7px; border-radius: 99px;
+        }
+        .chip-teal { background: var(--teal-glow); color: var(--teal); }
+        .chip-amber { background: var(--amber-dim); color: var(--amber); }
+        .chip-red { background: var(--red-dim); color: var(--red); }
+
+        .sidebar-footer {
+            padding: 12px 10px; border-top: 1px solid var(--border);
+        }
+        .user-row { display: flex; align-items: center; gap: 9px; padding: 8px 8px; }
+        .user-ava {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            background: linear-gradient(135deg,var(--teal),var(--purple));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; overflow: hidden;
+        }
+        .user-ava img { width: 100%; height: 100%; object-fit: cover; }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-tag { font-size: 10px; color: var(--teal); font-weight: 600; letter-spacing: .5px; }
+        .signout-btn {
+            background: transparent; border: none; color: var(--text3); cursor: pointer;
+            font-size: 15px; padding: 5px; border-radius: 6px; transition: all .15s;
+        }
+        .signout-btn:hover { background: var(--red-dim); color: var(--red); }
+
+        /* ── MAIN ── */
+        .main { margin-left: 230px; flex: 1; min-height: 100vh; }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            background: var(--bg2); border-bottom: 1px solid var(--border);
+            padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .breadcrumb { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+        .breadcrumb span { color: var(--text2); }
+        .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); }
+        .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: var(--radius); font-family: var(--font-body);
+            font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s;
+        }
+        .btn-teal { background: var(--teal); color: #fff; }
+        .btn-teal:hover { background: #38bdf8; box-shadow: 0 0 16px rgba(14,165,233,.4); }
+        .btn-ghost { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); }
+        .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+        .btn-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
+        .btn-amber:hover { background: rgba(245,158,11,.25); }
+        .btn-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+        .btn-red:hover { background: rgba(239,68,68,.25); }
+        .btn-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+        .btn-green:hover { background: rgba(34,197,94,.25); }
+        .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+        /* ── PAGE CONTENT ── */
+        .page-content { padding: 24px 28px 48px; }
+
+        /* ── SECTION ── */
+        .section-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* ── KPI STRIP ── */
+        .kpi-strip { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+        .kpi {
+            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: 16px 18px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+        }
+        .kpi:hover { border-color: var(--border2); transform: translateY(-1px); }
+        .kpi.active-kpi { border-color: var(--teal); background: var(--teal-glow); }
+        .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+        .kpi-val { font-family: var(--font-mono); font-size: 32px; font-weight: 700; line-height: 1; }
+        .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: var(--font-mono); }
+        .kpi-teal .kpi-val { color: var(--teal); }
+        .kpi-amber .kpi-val { color: var(--amber); }
+        .kpi-red .kpi-val { color: var(--red); }
+        .kpi-green .kpi-val { color: var(--green); }
+        .kpi-purple .kpi-val { color: var(--purple); }
+
+        /* ── CHARTS GRID ── */
+        .charts-grid { display: grid; grid-template-columns: 1.2fr 2fr; gap: 16px; margin-bottom: 24px; }
+        .chart-card {
+            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px;
+        }
+        .chart-card-wide { grid-column: 1 / -1; }
+        .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .chart-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); }
+        .chart-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; }
+
+        /* ── COVERAGE BAR ── */
+        .coverage-grid { display: grid; gap: 8px; }
+        .cov-row { display: flex; align-items: center; gap: 10px; }
+        .cov-label { font-size: 12px; font-family: var(--font-mono); color: var(--text2); width: 80px; flex-shrink: 0; }
+        .cov-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+        .cov-fill { height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+        .cov-pct { font-size: 11px; font-family: var(--font-mono); color: var(--text2); width: 32px; text-align: right; }
+        .cov-count { font-size: 11px; font-family: var(--font-mono); color: var(--text3); width: 36px; text-align: right; }
+
+        /* ── DEVIATION CARDS ── */
+        .dev-grid { display: grid; gap: 10px; margin-bottom: 24px; }
+        .dev-card {
+            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: 18px 20px; transition: all .2s;
+            display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: start;
+        }
+        .dev-card:hover { border-color: var(--border2); }
+        .dev-card.crit { border-left: 3px solid var(--red); }
+        .dev-card.warn { border-left: 3px solid var(--amber); }
+        .dev-card.ok   { border-left: 3px solid var(--green); }
+        .dev-card.proc { border-left: 3px solid var(--teal); }
+        .dev-card.new  { border-left: 3px solid var(--purple); }
+
+        .dev-status-icon { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+        .icon-crit { background: var(--red-dim); }
+        .icon-warn { background: var(--amber-dim); }
+        .icon-ok   { background: var(--green-dim); }
+        .icon-proc { background: var(--teal-glow); }
+        .icon-new  { background: rgba(168,85,247,.15); }
+
+        .dev-main {}
+        .dev-obj { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.1; }
+        .dev-meta { font-size: 12px; color: var(--text3); margin-top: 3px; font-family: var(--font-mono); }
+        .dev-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .dev-note { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+        .dev-bcf-link {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; font-family: var(--font-mono); font-weight: 700;
+            color: var(--teal); background: var(--teal-glow); padding: 3px 8px; border-radius: 5px; text-decoration: none;
+        }
+        .dev-bcf-link:hover { background: rgba(14,165,233,.25); }
+
+        .dev-right { text-align: right; flex-shrink: 0; }
+        .dev-tolerance-block { }
+        .dev-tol-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); font-family: var(--font-mono); }
+        .dev-tol-val { font-family: var(--font-mono); font-size: 26px; font-weight: 700; line-height: 1.1; }
+        .dev-tol-req { font-size: 11px; font-family: var(--font-mono); color: var(--text3); margin-top: 1px; }
+        .dev-actions { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+
+        /* ── TAG / BADGE ── */
+        .tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--font-mono);
+        }
+        .tag-crit { background: var(--red-dim); color: var(--red); }
+        .tag-warn { background: var(--amber-dim); color: var(--amber); }
+        .tag-ok   { background: var(--green-dim); color: var(--green); }
+        .tag-proc { background: var(--teal-glow); color: var(--teal); }
+        .tag-new  { background: rgba(168,85,247,.15); color: var(--purple); }
+        .tag-type { background: var(--surface2); color: var(--text2); }
+
+        /* ── TOLERANCE GAUGE ── */
+        .tol-gauge { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .tol-track { flex: 1; height: 4px; background: var(--surface2); border-radius: 99px; overflow: visible; position: relative; }
+        .tol-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
+        .tol-marker { position: absolute; top: -4px; width: 2px; height: 12px; background: var(--text3); border-radius: 1px; }
+        .tol-nums { display: flex; justify-content: space-between; font-size: 9px; font-family: var(--font-mono); color: var(--text3); margin-top: 2px; }
+
+        /* ── ASSIGN ROW ── */
+        .assign-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .assign-label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); flex-shrink: 0; }
+        .assign-select {
+            flex: 1; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border2);
+            border-radius: 7px; font-family: var(--font-body); font-size: 13px; color: var(--text); outline: none;
+        }
+        .assign-select:focus { border-color: var(--teal); }
+        .reassign-wrap { margin-top: 8px; }
+        .reassign-select {
+            width: 100%; padding: 6px 10px; background: var(--bg); border: 1px solid rgba(245,158,11,.4);
+            border-radius: 7px; font-family: var(--font-body); font-size: 13px; color: var(--text); outline: none;
+        }
+        .reassign-panel { display: none; margin-top: 8px; padding: 10px; background: var(--amber-dim); border-radius: 8px; border: 1px solid rgba(245,158,11,.2); }
+        .reassign-panel.open { display: block; }
+        .reassign-warn { font-size: 11px; color: var(--amber); font-family: var(--font-mono); margin-bottom: 6px; }
+
+        /* ── MODAL ── */
+        .modal-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 300;
+            background: rgba(1,4,9,.75); backdrop-filter: blur(6px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal {
+            background: var(--bg2); border: 1px solid var(--border2);
+            border-radius: 18px; padding: 28px; width: 100%; max-width: 560px;
+            box-shadow: 0 24px 80px rgba(0,0,0,.6); animation: modal-pop .2s ease;
+            max-height: 90vh; overflow-y: auto;
+        }
+        @keyframes modal-pop { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+        .modal-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .form-row.single { grid-template-columns: 1fr; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--text3); font-family: var(--font-mono); }
+        .form-input, .form-select, .form-textarea {
+            padding: 10px 13px; background: var(--surface); border: 1px solid var(--border2);
+            border-radius: 8px; font-family: var(--font-body); font-size: 14px; color: var(--text); outline: none;
+            transition: border .15s;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--teal); background: var(--bg3); }
+        .form-textarea { min-height: 80px; resize: vertical; }
+        .form-input::placeholder, .form-textarea::placeholder { color: var(--text3); }
+        .modal-footer { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+        /* ── TERMIN MODAL ── */
+        #terminModal .modal { max-width: 400px; }
+
+        /* ── EMPTY ── */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+        .empty-icon { font-size: 36px; margin-bottom: 10px; }
+        .empty-text { font-size: 14px; }
+
+        /* ── SPINNER ── */
+        .spinner-full { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 2px solid var(--border2); border-top-color: var(--teal); border-radius: 50%; animation: spin .65s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner-text { color: var(--text3); font-size: 13px; font-family: var(--font-mono); margin-top: 12px; }
+
+        /* ── LOGIN ── */
+        .login-bg {
+            min-height: 100vh; background: var(--bg);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            background-image: radial-gradient(ellipse 60% 40% at 60% 30%, rgba(14,165,233,.08) 0%, transparent 60%),
+                              radial-gradient(ellipse 40% 60% at 20% 80%, rgba(168,85,247,.06) 0%, transparent 60%);
+        }
+        .login-card {
+            background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+            padding: 44px; max-width: 400px; width: 100%; box-shadow: var(--shadow-lg);
+        }
+        .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+        .login-cube { width: 44px; height: 44px; background: var(--teal); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 30px rgba(14,165,233,.5); }
+        .login-title { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
+        .login-role { font-size: 12px; color: var(--teal); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+        .login-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 28px; }
+        .google-btn {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
+            padding: 13px 20px; border-radius: 10px; border: 1px solid var(--border2);
+            background: var(--surface); font-family: var(--font-body); font-size: 15px; font-weight: 600;
+            color: var(--text); cursor: pointer; transition: all .15s;
+        }
+        .google-btn:hover { border-color: var(--teal); background: var(--teal-glow); color: var(--teal); box-shadow: 0 0 20px rgba(14,165,233,.2); }
+        .login-note { margin-top: 16px; padding: 10px 14px; background: var(--surface); border-radius: 8px; font-size: 11px; color: var(--text3); font-family: var(--font-mono); text-align: center; }
+        .error-alert { margin-bottom: 20px; padding: 12px 14px; background: var(--red-dim); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; font-size: 13px; color: var(--red); }
+
+        /* ── FEATURE PILLS (login) ── */
+        .feature-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+        .fpill { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); background: var(--surface2); color: var(--text3); }
+
+        /* ── BCF EXPORT MODAL ── */
+        .bcf-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--text2); max-height: 200px; overflow-y: auto; line-height: 1.6; margin-top: 12px; }
+
+        /* ── RESP ── */
+        @media (max-width: 960px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .kpi-strip { grid-template-columns: repeat(2,1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-  <h1>TC Test Extension je aktivní</h1>
+
+<!-- Nový požadavek modal -->
+<div id="newReqModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-title">⊕ Nový požadavek zaměření</div>
+        <div class="modal-sub">Vazba na BIM model · přesnost · BCF reference</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Číslo objektu / Element *</label>
+                <input id="nrObjekt" type="text" class="form-input" placeholder="např. SO-05 / Stěna-3F-A">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Stavební sekce</label>
+                <select id="nrSekce" class="form-select">
+                    <option value="">— Vyberte —</option>
+                    <option>SO-01 Hlavní budova</option>
+                    <option>SO-02 Parkovací dům</option>
+                    <option>SO-03 Přípojky</option>
+                    <option>SO-04 Komunikace</option>
+                    <option>SO-05 Terénní úpravy</option>
+                    <option>Jiné</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Typ zaměření *</label>
+                <select id="nrTyp" class="form-select">
+                    <option value="">— Vyberte typ —</option>
+                    <option>As-built kontrola</option>
+                    <option>Výtyčení</option>
+                    <option>Kontrolní měření</option>
+                    <option>Dokumentace odchylek</option>
+                    <option>Polohové zaměření</option>
+                    <option>Výškové zaměření</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Požadovaná přesnost *</label>
+                <select id="nrPresnost" class="form-select">
+                    <option value="">— Tolerance ±mm —</option>
+                    <option value="2">± 2 mm (nosné prvky)</option>
+                    <option value="5">± 5 mm (betonové stěny)</option>
+                    <option value="10">± 10 mm (masivní konstrukce)</option>
+                    <option value="20">± 20 mm (terén, zemní práce)</option>
+                    <option value="50">± 50 mm (hrubé zemní práce)</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">BCF Issue ID</label>
+                <input id="nrBcf" type="text" class="form-input" placeholder="BCF-042">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Požadované datum</label>
+                <input id="nrDatum" type="date" class="form-input">
+            </div>
+        </div>
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">Trimble Connect odkaz</label>
+                <input id="nrTrimble" type="url" class="form-input" placeholder="https://web.connect.trimble.com/...">
+            </div>
+        </div>
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">IFC GUID (volitelné)</label>
+                <input id="nrGuid" type="text" class="form-input" placeholder="3mfP2yBWfAqBl5vj7...">
+            </div>
+        </div>
+        <div class="form-row single">
+            <div class="form-group">
+                <label class="form-label">Popis / kontext odchylky</label>
+                <textarea id="nrPoznamka" class="form-textarea" placeholder="Vizuálně patrná odchylka stěny od projektované polohy, nutno ověřit zaměřením…"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeNewReqModal()">Zrušit</button>
+            <button class="btn btn-teal" style="flex:2" onclick="submitNewRequest()">⊕ Vytvořit požadavek</button>
+        </div>
+    </div>
+</div>
+
+<!-- Termin modal -->
+<div id="terminModal" class="modal-backdrop">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-title">📅 Potvrdit termín příjezdu</div>
+        <div class="modal-sub">Termín bude odeslán stavbyvedoucímu emailem</div>
+        <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">Datum příjezdu *</label>
+            <input type="date" id="modalDatum" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Čas příjezdu *</label>
+            <input type="time" id="modalCas" class="form-input">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeTerminModal()">Zrušit</button>
+            <button class="btn btn-teal" style="flex:1" onclick="confirmTermin()">✓ Potvrdit</button>
+        </div>
+    </div>
+</div>
+
+<!-- BCF Export modal -->
+<div id="bcfModal" class="modal-backdrop">
+    <div class="modal" style="max-width:500px">
+        <div class="modal-title">📦 BCF Export</div>
+        <div class="modal-sub">Export odchylek mimo toleranci do BCF formátu pro Navisworks / Trimble Connect</div>
+        <div id="bcfPreview" class="bcf-preview"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeBcfModal()">Zavřít</button>
+            <button class="btn btn-teal" style="flex:2" onclick="downloadBcf()">⬇ Stáhnout BCF soubor</button>
+        </div>
+    </div>
+</div>
+
+<div id="root"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as firebaseSignOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCshVry9Sx0JAJiBR4aT_VyYXYoxVXtBM0",
+    authDomain: "geodet-app.firebaseapp.com",
+    projectId: "geodet-app",
+    storageBucket: "geodet-app.firebasestorage.app",
+    messagingSenderId: "519802717907",
+    appId: "1:519802717907:web:b82b9dddee22840d23b626"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbxMcVSWoZgeFU_jE2RUp_INEhZeAOo_T6qAZywQHUg3TTZ71acgvM9CjGQy4eAnXDTLPQ/exec';
+
+const EMAIL_CONFIG = {
+    serviceId: 'service_suouxkq',
+    templateId: 'template_assign',
+    publicKey: 'CJWpbTlUQfegnb7AK'
+};
+
+emailjs.init(EMAIL_CONFIG.publicKey);
+
+const geodetEmails = {
+    'Dalibor Straka': 'dalibor.straka@strabag.com',
+    'Tomáš Horáček': 'tomas.horacek@strabag.com',
+    'Petr Kočiš': 'petr.kocis@strabag.com',
+    'Michal Apt': 'michal.apt@strabag.com',
+    'Alexandra Pinkovska': 'alexandra.pinkovska@strabag.com',
+    'Matej Kovac': 'matej.kovac@strabag.com',
+    'Roland Klimt': 'roland.klimt@strabag.com',
+    'Martin Morvay': 'martin.morvay@strabag.com'
+};
+
+const ALLOWED_EMAILS = [
+    'mavesela@atlas.cz','tomaula@gmail.com','jan.trnous@gmail.com','michalapt84@gmail.com','michaela.smejkalpeckova@gmail.com'
+];
+
+const geodeti = ['Dalibor Straka','Tomáš Horáček','Petr Kočiš','Michal Apt','Alexandra Pinkovska','Matej Kovac','Roland Klimt','Jan Trnka','Martin Morvay'];
+
+let chartDonut = null;
+let chartDeviation = null;
+let chartCoverage = null;
+
+let state = {
+    isAuthenticated: false,
+    isLoading: true,
+    currentUser: null,
+    requests: [],
+    loading: false,
+    loginError: null,
+    view: 'dashboard',
+    filterTol: 'all',
+    terminModal: { open: false, requestId: null }
+};
+
+// ── TOLERANCE LOGIC ──────────────────────────────────────────────
+function computeTolStatus(req) {
+    const odchylka = parseFloat(req.skutecnaOdchylka);
+    const presnost = parseFloat(req.pozadovanaPresnost);
+    if (isNaN(odchylka) || isNaN(presnost)) return null;
+    if (odchylka <= presnost) return 'ok';
+    if (odchylka <= presnost * 2) return 'warn';
+    return 'crit';
+}
+
+function getDevStatus(req) {
+    if (req.stav === 'Nový') return 'new';
+    if (req.stav === 'Přiřazeno') return 'proc';
+    const tol = computeTolStatus(req);
+    if (tol === 'ok') return 'ok';
+    if (tol === 'warn') return 'warn';
+    if (tol === 'crit') return 'crit';
+    return 'proc';
+}
+
+function tolLabel(status) {
+    if (status === 'ok')   return '<span class="tag tag-ok">✓ V toleranci</span>';
+    if (status === 'warn') return '<span class="tag tag-warn">⚠ Mimo toleranci</span>';
+    if (status === 'crit') return '<span class="tag tag-crit">✕ Kritická odchylka</span>';
+    return '';
+}
+
+function statusTag(req) {
+    const s = getDevStatus(req);
+    if (s === 'new')  return '<span class="tag tag-new">● Nový</span>';
+    if (s === 'proc') return '<span class="tag tag-proc">◌ Zaměřuje se</span>';
+    if (s === 'ok')   return '<span class="tag tag-ok">✓ V toleranci</span>';
+    if (s === 'warn') return '<span class="tag tag-warn">⚠ Mimo toleranci</span>';
+    if (s === 'crit') return '<span class="tag tag-crit">✕ Kritická odchylka</span>';
+    return '';
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function parseFileIds(s) { return s ? s.split(',').map(x=>x.trim()).filter(Boolean) : []; }
+function driveUrl(id) { return id ? `https://drive.google.com/file/d/${id}/view` : null; }
+
+// ── DATA ─────────────────────────────────────────────────────────
+async function loadRequests() {
+    state.loading = true; render();
+    try {
+        const r = await fetch(`${API_URL}?action=getAll`);
+        state.requests = await r.json();
+    } catch(e) { console.error(e); alert('❌ Nepodařilo se načíst data'); }
+    state.loading = false; render();
+}
+
+// ── NEW REQUEST ───────────────────────────────────────────────────
+window.openNewReqModal = function() { document.getElementById('newReqModal').classList.add('open'); };
+window.closeNewReqModal = function() { document.getElementById('newReqModal').classList.remove('open'); };
+
+window.submitNewRequest = async function() {
+    const objekt   = document.getElementById('nrObjekt').value.trim();
+    const sekce    = document.getElementById('nrSekce').value;
+    const typ      = document.getElementById('nrTyp').value;
+    const presnost = document.getElementById('nrPresnost').value;
+    const bcf      = document.getElementById('nrBcf').value.trim();
+    const datum    = document.getElementById('nrDatum').value;
+    const trimble  = document.getElementById('nrTrimble').value.trim();
+    const guid     = document.getElementById('nrGuid').value.trim();
+    const poznamka = document.getElementById('nrPoznamka').value.trim();
+
+    if (!objekt || !typ || !presnost) {
+        alert('❌ Vyplňte povinná pole: Objekt, Typ zaměření, Přesnost');
+        return;
+    }
+
+    const user = state.currentUser;
+    const noteParts = [
+        poznamka,
+        sekce    ? `[Sekce: ${sekce}]` : '',
+        bcf      ? `[BCF: ${bcf}]` : '',
+        trimble  ? `[TC: ${trimble}]` : '',
+        guid     ? `[IFC: ${guid}]` : '',
+        presnost ? `[Přesnost: ±${presnost}mm]` : ''
+    ].filter(Boolean).join(' ');
+
+    try {
+        const params = new URLSearchParams({
+            action: 'add',
+            objektCislo: objekt,
+            jmeno: user.displayName || user.email,
+            email: user.email,
+            poznamka: noteParts,
+            typZamereni: typ,
+            datumPozadavku: new Date().toLocaleDateString('cs-CZ'),
+            pozadovaneDatum: datum,
+            stav: 'Nový'
+        });
+        await fetch(`${API_URL}?${params}`);
+        alert('✅ Požadavek byl vytvořen a předán hlavnímu geodetovi');
+        document.getElementById('newReqModal').classList.remove('open');
+        await loadRequests();
+    } catch(e) {
+        console.error(e); alert('❌ Nepodařilo se vytvořit požadavek');
+    }
+};
+
+// ── ASSIGN (zjednodušené — BIM coord předává přiřazení hlavnímu geodetovi,
+//    ale může také přiřadit přímo v nouzi) ──────────────────────────────────
+window.assignGeodet = async function(requestId, geodet) {
+    if (!geodet) return;
+    try {
+        const req = state.requests.find(r => r.id == requestId);
+        if (!req) return;
+        const params = new URLSearchParams({ action:'update', id:requestId, pridelenyGeodet:geodet, stav:'Přiřazeno' });
+        await fetch(`${API_URL}?${params}`);
+        const email = geodetEmails[geodet];
+        if (email) {
+            try {
+                await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, {
+                    to_email: email, to_name: geodet,
+                    objekt_cislo: req.objektCislo, poznamka: req.poznamka,
+                    zadal_jmeno: req.jmeno, zadal_email: req.email,
+                    datum_pozadavku: req.datumPozadavku,
+                    app_url: 'https://geodetmasna.github.io/geodet-app/',
+                    ma_prilohu: req.prilohaFileId ? 'Ano' : 'Ne'
+                });
+            } catch(e) { console.error(e); }
+        }
+        alert(`✅ Geodet ${geodet} přiřazen${email?' a informován emailem':''}`);
+        await loadRequests();
+    } catch(e) { alert('❌ Chyba při přiřazení'); }
+};
+
+window.reassignGeodet = async function(requestId, novyGeodet) {
+    if (!novyGeodet) return;
+    const req = state.requests.find(r => r.id == requestId);
+    if (!req) return;
+    const puvodni = req.pridelenyGeodet;
+    if (novyGeodet === puvodni) { alert('⚠️ Stejný geodet'); return; }
+    if (!confirm(`Přeřadit "${req.objektCislo}"?\n${puvodni} → ${novyGeodet}`)) { render(); return; }
+    try {
+        const params = new URLSearchParams({ action:'update', id:requestId, pridelenyGeodet:novyGeodet, stav:'Přiřazeno' });
+        await fetch(`${API_URL}?${params}`);
+        const email = geodetEmails[novyGeodet];
+        if (email) {
+            try {
+                await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, {
+                    to_email: email, to_name: novyGeodet,
+                    objekt_cislo: req.objektCislo,
+                    poznamka: `[PŘEŘAZENO od: ${puvodni}] ${req.poznamka}`,
+                    zadal_jmeno: req.jmeno, zadal_email: req.email,
+                    datum_pozadavku: req.datumPozadavku,
+                    app_url: 'https://geodetmasna.github.io/geodet-app/',
+                    ma_prilohu: req.prilohaFileId ? 'Ano' : 'Ne'
+                });
+            } catch(e) { console.error(e); }
+        }
+        alert(`✅ Přeřazeno na ${novyGeodet}`);
+        await loadRequests();
+    } catch(e) { alert('❌ Chyba při přeřazení'); }
+};
+
+window.toggleReassign = function(id) {
+    const p = document.getElementById(`rp-${id}`);
+    if (p) p.classList.toggle('open');
+};
+
+// ── TERMIN ──────────────────────────────────────────────────────
+window.openTerminModal = function(requestId, datum, cas) {
+    state.terminModal = { open:true, requestId };
+    document.getElementById('terminModal').classList.add('open');
+    document.getElementById('modalDatum').value = datum || '';
+    document.getElementById('modalCas').value = cas || '';
+};
+window.closeTerminModal = function() { document.getElementById('terminModal').classList.remove('open'); };
+window.confirmTermin = async function() {
+    const datum = document.getElementById('modalDatum').value;
+    const cas   = document.getElementById('modalCas').value;
+    if (!datum || !cas) { alert('❌ Vyplňte datum i čas'); return; }
+    const { requestId } = state.terminModal;
+    const req = state.requests.find(r => r.id == requestId);
+    if (!req) return;
+    try {
+        const params = new URLSearchParams({ action:'update', id:requestId, schvaleneDatum:datum, schvalenyCas:cas, terminPotvrzen:'Ano' });
+        await fetch(`${API_URL}?${params}`);
+        const bylUpraven = datum !== req.pozadovaneDatum || cas !== req.pozadovanyCas;
+        await emailjs.send(EMAIL_CONFIG.serviceId, 'template_termin_schvalen', {
+            to_email:req.email, to_name:req.jmeno, objekt_cislo:req.objektCislo,
+            pozadovane_datum:req.pozadovaneDatum, pozadovany_cas:req.pozadovanyCas,
+            schvalene_datum:datum, schvaleny_cas:cas,
+            byl_upraven: bylUpraven?'Ano':'Ne',
+            status_text: bylUpraven?'✏️ Termín upraven':'✓ Termín potvrzen',
+            akce_text: bylUpraven?'upravil':'potvrdil', poznamka:req.poznamka
+        });
+        alert('✅ Termín potvrzen');
+        document.getElementById('terminModal').classList.remove('open');
+        await loadRequests();
+    } catch(e) { alert('❌ Chyba při potvrzování termínu'); }
+};
+
+// ── BCF EXPORT ────────────────────────────────────────────────────
+function extractBcfId(poznamka) {
+    const m = poznamka?.match(/\[BCF:\s*([^\]]+)\]/);
+    return m ? m[1].trim() : null;
+}
+function extractTrimble(poznamka) {
+    const m = poznamka?.match(/\[TC:\s*([^\]]+)\]/);
+    return m ? m[1].trim() : null;
+}
+function extractPresnost(poznamka) {
+    const m = poznamka?.match(/\[Přesnost:\s*±?(\d+)mm\]/);
+    return m ? parseInt(m[1]) : null;
+
+}
+function extractSekce(poznamka) {
+    const m = poznamka?.match(/\[Sekce:\s*([^\]]+)\]/);
+    return m ? m[1].trim() : null;
+}
+
+let bcfContent = '';
+
+window.openBcfModal = function() {
+    const critReqs = state.requests.filter(r => getDevStatus(r) === 'crit' || getDevStatus(r) === 'warn');
+    if (critReqs.length === 0) { alert('ℹ️ Žádné odchylky mimo toleranci k exportu'); return; }
+
+    const now = new Date().toISOString();
+    const issues = critReqs.map((req, i) => {
+        const bcfId = extractBcfId(req.poznamka) || `AUTO-${i+1}`;
+        const odchylka = req.skutecnaOdchylka ? `${req.skutecnaOdchylka}mm` : 'N/A';
+        const presnost = extractPresnost(req.poznamka);
+        const status = getDevStatus(req) === 'crit' ? 'CRITICAL' : 'WARNING';
+        return `  <Topic Guid="${crypto.randomUUID()}" TopicType="Issue" TopicStatus="${status}">
+    <Title>[${bcfId}] ${req.objektCislo} — odchylka ${odchylka}</Title>
+    <CreationDate>${now}</CreationDate>
+    <CreationAuthor>${state.currentUser?.email || 'bim@strabag.com'}</CreationAuthor>
+    <Description>${req.poznamka?.replace(/\[[^\]]+\]/g,'').trim() || ''}&#10;Zaměřil: ${req.pridelenyGeodet || 'N/A'}&#10;Odchylka: ${odchylka}${presnost ? ` / Tolerance: ±${presnost}mm` : ''}</Description>
+    <AssignedTo>${req.pridelenyGeodet || ''}</AssignedTo>
+    <DueDate>${req.datumDokonceni || ''}</DueDate>
+  </Topic>`;
+    }).join('\n');
+
+    bcfContent = `<?xml version="1.0" encoding="UTF-8"?>\n<BIM360 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n<Version VersionId="2.1">\n  <DetailedVersion>2.1</DetailedVersion>\n</Version>\n${issues}\n</BIM360>`;
+    document.getElementById('bcfPreview').textContent = bcfContent;
+    document.getElementById('bcfModal').classList.add('open');
+};
+window.closeBcfModal = function() { document.getElementById('bcfModal').classList.remove('open'); };
+window.downloadBcf = function() {
+    const blob = new Blob([bcfContent], { type: 'application/xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `odchylky_${new Date().toLocaleDateString('cs-CZ').replace(/\./g,'-')}.bcf`;
+    a.click();
+};
+
+// ── EXPORT XLSX ────────────────────────────────────────────────────
+window.exportExcel = function() {
+    const data = state.requests.map(req => ({
+        'Objekt': req.objektCislo,
+        'Sekce': extractSekce(req.poznamka) || '-',
+        'Typ zaměření': req.typZamereni || '-',
+        'BCF Issue': extractBcfId(req.poznamka) || '-',
+        'Stav': req.stav,
+        'Tolerance ±mm': extractPresnost(req.poznamka) || '-',
+        'Skutečná odchylka mm': req.skutecnaOdchylka || '-',
+        'Status odchylky': (() => { const s=computeTolStatus(req); return s?{'ok':'V toleranci','warn':'Mimo toleranci','crit':'Kritická odchylka'}[s]:'-'; })(),
+        'Přiřazený geodet': req.pridelenyGeodet || '-',
+        'Datum zaměření': req.datumDokonceni || '-',
+        'Zadal': req.jmeno,
+        'Datum požadavku': req.datumPozadavku,
+        'Trimble Connect': extractTrimble(req.poznamka) || '-',
+        'Poznámka': (req.poznamka||'').replace(/\[[^\]]+\]/g,'').trim()
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'BIM Zaměření');
+    XLSX.writeFile(wb, `BIM_zaměření_${new Date().toLocaleDateString('cs-CZ').replace(/\./g,'-')}.xlsx`);
+};
+
+// ── AUTH ──────────────────────────────────────────────────────────
+window.signInWithGoogle = async function() {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const email = result.user.email.toLowerCase();
+        if (!ALLOWED_EMAILS.some(e => email.includes(e.toLowerCase()))) {
+            state.loginError = 'Nemáte oprávnění k přístupu.';
+            await firebaseSignOut(auth); render();
+        }
+    } catch(e) { state.loginError = 'Chyba: ' + e.message; render(); }
+};
+window.signOut = async function() {
+    try { await firebaseSignOut(auth); state.requests = []; } catch(e) {}
+};
+
+onAuthStateChanged(auth, (user) => {
+    state.isLoading = false;
+    if (user) {
+        const ok = ALLOWED_EMAILS.some(e => user.email.toLowerCase().includes(e.toLowerCase()));
+        if (ok) {
+            state.isAuthenticated = true;
+            state.currentUser = user;
+            state.loginError = null;
+            loadRequests();
+        } else {
+            state.isAuthenticated = false;
+            state.currentUser = null;
+            state.loginError = 'Nemáte oprávnění.';
+            firebaseSignOut(auth);
+        }
+    } else {
+        state.isAuthenticated = false;
+        state.currentUser = null;
+    }
+    render();
+});
+
+// ── NAV ───────────────────────────────────────────────────────────
+window.setView = function(v) { state.view = v; state.filterTol = 'all'; render(); };
+window.setFilter = function(f) { state.filterTol = f; render(); };
+
+// ── CHARTS ───────────────────────────────────────────────────────
+function renderCharts() {
+    const reqs = state.requests;
+
+    // Donut — stav odchylek
+    const ctxD = document.getElementById('chartDonut');
+    if (ctxD) {
+        if (chartDonut) chartDonut.destroy();
+        const ok   = reqs.filter(r => getDevStatus(r) === 'ok').length;
+        const warn = reqs.filter(r => getDevStatus(r) === 'warn').length;
+        const crit = reqs.filter(r => getDevStatus(r) === 'crit').length;
+        const proc = reqs.filter(r => getDevStatus(r) === 'proc').length;
+        const nw   = reqs.filter(r => getDevStatus(r) === 'new').length;
+        chartDonut = new Chart(ctxD, {
+            type: 'doughnut',
+            data: {
+                labels: ['V toleranci','Mimo toleranci','Kritická','Zaměřuje se','Nové'],
+                datasets: [{
+                    data: [ok, warn, crit, proc, nw],
+                    backgroundColor: ['#22c55e','#f59e0b','#ef4444','#0ea5e9','#a855f7'],
+                    borderWidth: 0, hoverOffset: 5
+                }]
+            },
+            options: {
+                cutout: '72%',
+                plugins: {
+                    legend: { position:'bottom', labels:{ color:'#8b949e', font:{family:'Barlow',size:11}, padding:12, usePointStyle:true, pointStyleWidth:7 } }
+                }
+            }
+        });
+    }
+
+    // Bar — odchylky vs. tolerance
+    const ctxB = document.getElementById('chartDev');
+    if (ctxB) {
+        if (chartDeviation) chartDeviation.destroy();
+        const completed = reqs.filter(r => r.skutecnaOdchylka && r.poznamka?.includes('[Přesnost:'));
+        const labels = completed.map(r => r.objektCislo);
+        const dOdchylka = completed.map(r => parseFloat(r.skutecnaOdchylka));
+        const dTolerance = completed.map(r => extractPresnost(r.poznamka));
+        const barColors = completed.map(r => {
+            const s = computeTolStatus(r);
+            return s==='ok' ? '#22c55e' : s==='warn' ? '#f59e0b' : '#ef4444';
+        });
+
+        chartDeviation = new Chart(ctxB, {
+            type: 'bar',
+            data: {
+                labels: labels.length ? labels : ['—'],
+                datasets: [
+                    {
+                        label: 'Skutečná odchylka (mm)',
+                        data: dOdchylka.length ? dOdchylka : [0],
+                        backgroundColor: barColors,
+                        borderRadius: 5, borderSkipped: false
+                    },
+                    {
+                        label: 'Tolerance (mm)',
+                        data: dTolerance.length ? dTolerance : [0],
+                        type: 'line',
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1.5,
+                        borderDash: [4,3],
+                        pointRadius: 3,
+                        pointBackgroundColor: '#0ea5e9',
+                        order: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{family:'Space Mono',size:10}} },
+                    y: { beginAtZero:true, grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{family:'Space Mono',size:11}}, title:{display:true,text:'mm',color:'#484f58',font:{family:'Space Mono',size:10}} }
+                },
+                plugins: {
+                    legend:{ labels:{color:'#8b949e',font:{family:'Barlow',size:11},usePointStyle:true,pointStyleWidth:7} }
+                }
+            }
+        });
+    }
+}
+
+// ── COVERAGE BARS ─────────────────────────────────────────────────
+function renderCoverageSection() {
+    const reqs = state.requests;
+    const sections = {};
+    reqs.forEach(r => {
+        const sekce = extractSekce(r.poznamka) || 'Neurčeno';
+        if (!sections[sekce]) sections[sekce] = { total:0, done:0 };
+        sections[sekce].total++;
+        if (r.stav === 'Dokončeno') sections[sekce].done++;
+    });
+
+    if (Object.keys(sections).length === 0) return '<p style="color:var(--text3);font-size:13px">Žádná data</p>';
+
+    return Object.entries(sections).sort((a,b) => b[1].total - a[1].total).map(([name, d]) => {
+        const pct = d.total > 0 ? Math.round((d.done/d.total)*100) : 0;
+        const col = pct >= 75 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444';
+        return `
+        <div class="cov-row">
+            <span class="cov-label">${name.replace('SO-0','SO-').substring(0,12)}</span>
+            <div class="cov-track">
+                <div class="cov-fill" style="width:${pct}%;background:${col}"></div>
+            </div>
+            <span class="cov-pct" style="color:${col}">${pct}%</span>
+            <span class="cov-count">${d.done}/${d.total}</span>
+        </div>`;
+    }).join('');
+}
+
+// ── RENDER REQUEST CARD ───────────────────────────────────────────
+function renderCard(req) {
+    const s = getDevStatus(req);
+    const odchylka = req.skutecnaOdchylka ? parseFloat(req.skutecnaOdchylka) : null;
+    const presnost = extractPresnost(req.poznamka);
+    const bcfId = extractBcfId(req.poznamka);
+    const trimble = extractTrimble(req.poznamka);
+    const sekce = extractSekce(req.poznamka);
+    const cleanNote = (req.poznamka||'').replace(/\[[^\]]+\]/g,'').trim();
+    const fotkyIds = parseFileIds(req.fotkaFileId);
+
+    const iconMap = { crit:'⚠', warn:'△', ok:'✓', proc:'◎', new:'◈' };
+    const iconClass = { crit:'icon-crit', warn:'icon-warn', ok:'icon-ok', proc:'icon-proc', new:'icon-new' };
+
+    // Tolerance gauge
+    let gaugeHtml = '';
+    if (odchylka !== null && presnost) {
+        const maxVal = Math.max(odchylka, presnost * 2.5);
+        const fillPct = Math.min(100, (odchylka/maxVal)*100);
+        const markerPct = (presnost/maxVal)*100;
+        const fillColor = s==='ok'?'#22c55e':s==='warn'?'#f59e0b':'#ef4444';
+        gaugeHtml = `
+        <div class="tol-gauge">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">0</span>
+            <div class="tol-track">
+                <div class="tol-fill" style="width:${fillPct}%;background:${fillColor}"></div>
+                <div class="tol-marker" style="left:${markerPct}%;"></div>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${Math.round(maxVal)}mm</span>
+        </div>
+        <div class="tol-nums"><span>skutečná: ${odchylka}mm</span><span>tolerance: ±${presnost}mm</span></div>`;
+    }
+
+    return `
+    <div class="dev-card ${s}">
+        <div class="dev-status-icon ${iconClass[s]}">${iconMap[s]}</div>
+        <div class="dev-main">
+            <div class="dev-obj">${req.objektCislo}</div>
+            <div class="dev-meta">${req.datumPozadavku} · ${req.jmeno}${sekce ? ` · ${sekce}` : ''}</div>
+            <div class="dev-tags">
+                ${statusTag(req)}
+                ${req.typZamereni ? `<span class="tag tag-type">${req.typZamereni}</span>` : ''}
+                ${bcfId ? `<a href="#" class="dev-bcf-link" onclick="return false">BCF ${bcfId}</a>` : ''}
+                ${trimble ? `<a href="${trimble}" target="_blank" class="dev-bcf-link">⊞ Trimble Connect</a>` : ''}
+            </div>
+            ${cleanNote ? `<div class="dev-note">${cleanNote}</div>` : ''}
+            ${gaugeHtml}
+
+            ${req.stav === 'Nový' ? `
+            <div class="assign-row">
+                <span class="assign-label">Přiřadit geodeta:</span>
+                <select class="assign-select" onchange="assignGeodet('${req.id}',this.value)">
+                    <option value="">— Vyberte —</option>
+                    ${geodeti.map(g=>`<option value="${g}">${g}</option>`).join('')}
+                </select>
+            </div>` : ''}
+
+            ${req.stav === 'Přiřazeno' ? `
+            <div class="assign-row">
+                <span class="assign-label">Geodet:</span>
+                <span style="font-weight:600;color:var(--teal);font-size:13px">${req.pridelenyGeodet}</span>
+                <button onclick="toggleReassign('${req.id}')" class="btn btn-amber btn-sm" style="margin-left:auto">🔄 Přeřadit</button>
+            </div>
+            <div id="rp-${req.id}" class="reassign-panel">
+                <div class="reassign-warn">⚠ Geodet nemůže přijet — vyberte náhradníka:</div>
+                <select class="reassign-select" onchange="reassignGeodet('${req.id}',this.value)">
+                    <option value="">— Náhradník —</option>
+                    ${geodeti.filter(g=>g!==req.pridelenyGeodet).map(g=>`<option value="${g}">${g}</option>`).join('')}
+                </select>
+            </div>` : ''}
+
+            ${req.pozadovaneDatum && req.pozadovanyCas && req.terminPotvrzen !== 'Ano' && req.stav === 'Nový' ? `
+            <div style="margin-top:10px">
+                <button onclick="openTerminModal('${req.id}','${req.pozadovaneDatum}','${req.pozadovanyCas}')" class="btn btn-ghost btn-sm">📅 Potvrdit termín ${req.pozadovaneDatum}</button>
+            </div>` : ''}
+
+            ${req.stav === 'Dokončeno' ? `
+            <div style="margin-top:10px;padding:12px 14px;background:var(--surface);border-radius:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-family:var(--font-mono)">
+                <span style="color:var(--text2)">Geodet: <strong style="color:var(--text)">${req.pridelenyGeodet||'-'}</strong></span>
+                <span style="color:var(--text2)">Datum: <strong style="color:var(--text)">${req.datumDokonceni||'-'}</strong></span>
+                ${req.poznamkaGeodeta ? `<span style="color:var(--text2)">Pozn.: <strong style="color:var(--text)">${req.poznamkaGeodeta}</strong></span>` : ''}
+                ${fotkyIds.map((id,i)=>`<a href="${driveUrl(id)}" target="_blank" style="color:var(--teal)">📷 Soubor ${i+1}</a>`).join('')}
+            </div>` : ''}
+        </div>
+        <div class="dev-right">
+            ${odchylka !== null ? `
+            <div class="dev-tolerance-block">
+                <div class="dev-tol-label">Odchylka</div>
+                <div class="dev-tol-val" style="color:${s==='ok'?'#22c55e':s==='warn'?'#f59e0b':'#ef4444'}">${odchylka}<span style="font-size:14px">mm</span></div>
+                ${presnost ? `<div class="dev-tol-req">tol. ±${presnost}mm</div>` : ''}
+            </div>` : presnost ? `
+            <div class="dev-tolerance-block">
+                <div class="dev-tol-label">Tolerance</div>
+                <div class="dev-tol-val" style="color:var(--text3);font-size:18px">±${presnost}<span style="font-size:12px">mm</span></div>
+            </div>` : ''}
+            <div class="dev-actions">
+                ${req.prilohaFileId ? `<a href="${driveUrl(req.prilohaFileId)}" target="_blank" class="btn btn-ghost btn-sm">🔎 Příloha</a>` : ''}
+            </div>
+        </div>
+    </div>`;
+}
+
+// ── DASHBOARD VIEW ────────────────────────────────────────────────
+function renderDashboard() {
+    const reqs = state.requests;
+    const total  = reqs.length;
+    const nw     = reqs.filter(r=>getDevStatus(r)==='new').length;
+    const proc   = reqs.filter(r=>getDevStatus(r)==='proc').length;
+    const ok     = reqs.filter(r=>getDevStatus(r)==='ok').length;
+    const warn   = reqs.filter(r=>getDevStatus(r)==='warn').length;
+    const crit   = reqs.filter(r=>getDevStatus(r)==='crit').length;
+    const done   = reqs.filter(r=>r.stav==='Dokončeno').length;
+    const coverage = total > 0 ? Math.round((done/total)*100) : 0;
+    const recent = [...reqs].sort((a,b)=>b.id-a.id).filter(r=>getDevStatus(r)==='crit'||getDevStatus(r)==='warn').slice(0,4);
+
+    return `
+    <div class="kpi-strip">
+        <div class="kpi kpi-teal" onclick="setView('requests');setFilter('all')">
+            <div class="kpi-label">Celkem požadavků</div>
+            <div class="kpi-val">${total}</div>
+            <div class="kpi-sub">model coverage ${coverage}%</div>
+        </div>
+        <div class="kpi kpi-green" onclick="setView('requests');setFilter('ok')">
+            <div class="kpi-label">V toleranci</div>
+            <div class="kpi-val">${ok}</div>
+            <div class="kpi-sub">shoda as-built</div>
+        </div>
+        <div class="kpi kpi-amber" onclick="setView('requests');setFilter('warn')">
+            <div class="kpi-label">Mimo toleranci</div>
+            <div class="kpi-val">${warn}</div>
+            <div class="kpi-sub">vyžaduje řešení</div>
+        </div>
+        <div class="kpi kpi-red" onclick="setView('requests');setFilter('crit')">
+            <div class="kpi-label">Kritické odchylky</div>
+            <div class="kpi-val">${crit}</div>
+            <div class="kpi-sub">eskalovat ihned</div>
+        </div>
+        <div class="kpi kpi-purple" onclick="setView('requests');setFilter('proc')">
+            <div class="kpi-label">V procesu</div>
+            <div class="kpi-val">${nw + proc}</div>
+            <div class="kpi-sub">${nw} nových · ${proc} přiřazeno</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title">Status odchylek</div>
+                    <div class="chart-sub">as-built vs. projekt</div>
+                </div>
+            </div>
+            <canvas id="chartDonut" style="max-height:220px"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title">Odchylky vs. tolerance</div>
+                    <div class="chart-sub">skutečná odchylka · přerušovaná čára = limit tolerance</div>
+                </div>
+            </div>
+            <div style="height:220px">
+                <canvas id="chartDev"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div class="chart-card">
+            <div class="chart-title" style="margin-bottom:16px">Pokrytí zaměřeními dle sekce</div>
+            <div class="coverage-grid">${renderCoverageSection()}</div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title" style="margin-bottom:16px">Aktivní problémy</div>
+            ${recent.length === 0 ? '<p style="color:var(--text3);font-size:13px;font-family:var(--font-mono)">Žádné aktivní problémy ✓</p>' :
+            recent.map(req => {
+                const s = getDevStatus(req);
+                const odchylka = req.skutecnaOdchylka;
+                const presnost = extractPresnost(req.poznamka);
+                return `
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+                    <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${s==='crit'?'var(--red)':'var(--amber)'}"></div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:13px;color:var(--text)">${req.objektCislo}</div>
+                        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">${req.pridelenyGeodet||req.jmeno}</div>
+                    </div>
+                    ${odchylka ? `<div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:${s==='crit'?'var(--red)':'var(--amber)'}">${odchylka}mm</div>` : ''}
+                    ${statusTag(req)}
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+// ── REQUESTS VIEW ─────────────────────────────────────────────────
+function renderRequests() {
+    const filterMap = {
+        all:  r => true,
+        new:  r => getDevStatus(r) === 'new',
+        proc: r => getDevStatus(r) === 'proc',
+        ok:   r => getDevStatus(r) === 'ok',
+        warn: r => getDevStatus(r) === 'warn',
+        crit: r => getDevStatus(r) === 'crit',
+    };
+    const filtered = state.requests.filter(filterMap[state.filterTol] || filterMap.all);
+
+    const tabClass = (f) => {
+        const base = 'filter-tab';
+        if (state.filterTol !== f) return base;
+        const map = { all:'active-all', new:'active-new', proc:'active-new', ok:'active-done', warn:'active-assigned', crit:'active-crit' };
+        return `${base} ${map[f]||''}`;
+    };
+
+    const reqs = state.requests;
+    const counts = {
+        all: reqs.length,
+        new: reqs.filter(r=>getDevStatus(r)==='new').length,
+        proc: reqs.filter(r=>getDevStatus(r)==='proc').length,
+        ok: reqs.filter(r=>getDevStatus(r)==='ok').length,
+        warn: reqs.filter(r=>getDevStatus(r)==='warn').length,
+        crit: reqs.filter(r=>getDevStatus(r)==='crit').length,
+    };
+
+    return `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;padding:16px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="filter-tab ${tabClass('all')}" onclick="setFilter('all')">Vše (${counts.all})</button>
+        <button class="filter-tab ${tabClass('new')}" onclick="setFilter('new')" style="${state.filterTol==='new'?'':''}">Nové (${counts.new})</button>
+        <button class="filter-tab ${tabClass('proc')}" onclick="setFilter('proc')">Zaměřuje se (${counts.proc})</button>
+        <button class="filter-tab ${tabClass('ok')}" onclick="setFilter('ok')">V toleranci (${counts.ok})</button>
+        <button class="filter-tab ${tabClass('warn')}" onclick="setFilter('warn')">Mimo toleranci (${counts.warn})</button>
+        <button class="filter-tab ${tabClass('crit')}" onclick="setFilter('crit')" style="color:var(--red)">⚠ Kritické (${counts.crit})</button>
+    </div>
+    <div class="dev-grid">
+        ${filtered.length === 0 ?
+            `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Žádné záznamy v tomto filtru</div></div>` :
+            filtered.map(renderCard).join('')
+        }
+    </div>`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────
+function render() {
+    const root = document.getElementById('root');
+
+    if (state.isLoading) {
+        root.innerHTML = `<div class="spinner-full"><div style="text-align:center"><div class="spinner" style="margin:0 auto"></div><div class="spinner-text">Načítání BIM Dashboardu…</div></div></div>`;
+        return;
+    }
+
+    if (!state.isAuthenticated) {
+        root.innerHTML = `
+        <div class="login-bg">
+            <div class="login-card">
+                <div class="login-logo">
+                    <div class="login-cube">⬡</div>
+                    <div>
+                        <div class="login-title">BIM Dashboard</div>
+                        <div class="login-role">BIM Koordinátor</div>
+                    </div>
+                </div>
+                <div class="login-desc">Správa geodetických zaměření z pohledu BIM — odchylky, tolerance, as-built dokumentace a BCF workflow.</div>
+                <div class="feature-pills">
+                    <span class="fpill">± Odchylky</span>
+                    <span class="fpill">BCF export</span>
+                    <span class="fpill">Trimble Connect</span>
+                    <span class="fpill">As-built coverage</span>
+                </div>
+                ${state.loginError ? `<div class="error-alert">${state.loginError}</div>` : ''}
+                <button class="google-btn" onclick="signInWithGoogle()">
+                    <svg width="19" height="19" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Přihlásit se pomocí Google
+                </button>
+                <div class="login-note">ℹ️ Přístup pouze pro autorizované uživatele STRABAG</div>
+            </div>
+        </div>`;
+        return;
+    }
+
+    const reqs = state.requests;
+    const crit = reqs.filter(r=>getDevStatus(r)==='crit').length;
+    const warn = reqs.filter(r=>getDevStatus(r)==='warn').length;
+    const nw   = reqs.filter(r=>getDevStatus(r)==='new').length;
+    const userName = state.currentUser.displayName || state.currentUser.email;
+    const userInitial = userName.charAt(0).toUpperCase();
+
+    const pageTitle = { dashboard:'Dashboard', requests:'Zaměření & Odchylky' }[state.view] || 'Dashboard';
+    const filterLabels = { all:'Vše', new:'Nové', proc:'V procesu', ok:'V toleranci', warn:'Mimo toleranci', crit:'Kritické' };
+
+    root.innerHTML = `
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-cube">⬡</div>
+                    <div>
+                        <div class="logo-name">BIM Dashboard</div>
+                        <div class="logo-role">Koordinátor</div>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-label">Přehled</div>
+                    <button class="nav-btn ${state.view==='dashboard'?'active':''}" onclick="setView('dashboard')">
+                        <span class="ni">◈</span> Dashboard
+                    </button>
+                    <button class="nav-btn ${state.view==='requests'?'active':''}" onclick="setView('requests')">
+                        <span class="ni">⊟</span> Zaměření
+                        ${nw>0?`<span class="nav-chip chip-teal">${nw}</span>`:''}
+                    </button>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-label">Odchylky</div>
+                    <button class="nav-btn" onclick="setView('requests');setFilter('crit')">
+                        <span class="ni">✕</span> Kritické
+                        ${crit>0?`<span class="nav-chip chip-red">${crit}</span>`:''}
+                    </button>
+                    <button class="nav-btn" onclick="setView('requests');setFilter('warn')">
+                        <span class="ni">△</span> Mimo toleranci
+                        ${warn>0?`<span class="nav-chip chip-amber">${warn}</span>`:''}
+                    </button>
+                    <button class="nav-btn" onclick="setView('requests');setFilter('ok')">
+                        <span class="ni">✓</span> V toleranci
+                    </button>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-label">Akce</div>
+                    <button class="nav-btn" onclick="openBcfModal()">
+                        <span class="ni">📦</span> BCF Export
+                    </button>
+                    <button class="nav-btn" onclick="exportExcel()">
+                        <span class="ni">📥</span> Export XLSX
+                    </button>
+                    <button class="nav-btn" onclick="refreshData()">
+                        <span class="ni">↻</span> Obnovit data
+                    </button>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-row">
+                    <div class="user-ava">
+                        ${state.currentUser.photoURL ? `<img src="${state.currentUser.photoURL}" alt="">` : userInitial}
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">${userName.split(' ')[0]}</div>
+                        <div class="user-tag">BIM Koordinátor</div>
+                    </div>
+                    <button class="signout-btn" onclick="signOut()" title="Odhlásit">⏻</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <div>
+                        <div class="breadcrumb">BIM / <span>${pageTitle}${state.view==='requests'&&state.filterTol!=='all' ? ' / '+filterLabels[state.filterTol]:''}</span></div>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    ${crit > 0 ? `<span style="background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.3);font-size:12px;font-family:var(--font-mono);font-weight:700;padding:5px 12px;border-radius:7px">⚠ ${crit} kritická odchylka${crit>1?'':''}!</span>` : ''}
+                    <button class="btn btn-teal" onclick="openNewReqModal()">⊕ Nový požadavek</button>
+                </div>
+            </div>
+
+            <div class="page-content">
+                ${state.loading ? `<div style="text-align:center;padding:60px"><div class="spinner" style="margin:0 auto"></div><div class="spinner-text" style="margin-top:12px">Načítám data…</div></div>` :
+                  state.view === 'dashboard' ? renderDashboard() : renderRequests()
+                }
+            </div>
+        </main>
+    </div>`;
+
+    // Bind window functions
+    window.refreshData = loadRequests;
+    window.setView = function(v) { state.view=v; state.filterTol='all'; render(); };
+    window.setFilter = function(f) { state.filterTol=f; state.view='requests'; render(); };
+
+    if (state.view === 'dashboard' && reqs.length > 0) {
+        requestAnimationFrame(() => renderCharts());
+    }
+}
+
+render();
+</script>
 </body>
 </html>
