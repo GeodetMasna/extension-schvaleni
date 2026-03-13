@@ -691,7 +691,7 @@ function loadCache() {
 let state = {
     isAuth: false, isLoading: true, currentUser: null,
     requests: [], loading: false, loginError: null,
-    view: 'home', filter: 'all',
+    view: 'home', filter: 'all', filterGeodet: null,
     terminModal: { reqId: null },
     reviewModal: { reqId: null, returnMode: false },
 };
@@ -719,13 +719,15 @@ function getMiniClass(stav) {
 
 function filteredRequests() {
     const f = state.filter;
-    if (f === 'all')     return state.requests;
-    if (f === 'new')     return state.requests.filter(r => r.stav === 'Nový');
-    if (f === 'assigned')return state.requests.filter(r => r.stav === 'Přiřazeno');
-    if (f === 'review')  return state.requests.filter(r => r.stav === 'Čeká na kontrolu');
-    if (f === 'done')    return state.requests.filter(r => r.stav === 'Dokončeno');
-    if (f === 'returned')return state.requests.filter(r => r.stav === 'Vráceno');
-    return state.requests;
+    let reqs = state.requests;
+    if (state.filterGeodet) reqs = reqs.filter(r => r.pridelenyGeodet === state.filterGeodet);
+    if (f === 'all')     return reqs;
+    if (f === 'new')     return reqs.filter(r => r.stav === 'Nový');
+    if (f === 'assigned')return reqs.filter(r => r.stav === 'Přiřazeno');
+    if (f === 'review')  return reqs.filter(r => r.stav === 'Čeká na kontrolu');
+    if (f === 'done')    return reqs.filter(r => r.stav === 'Dokončeno');
+    if (f === 'returned')return reqs.filter(r => r.stav === 'Vráceno');
+    return reqs;
 }
 
 // ── DATA ──────────────────────────────────────────────────────────
@@ -1207,6 +1209,12 @@ function renderTasks() {
     ];
 
     return `
+    ${state.filterGeodet ? `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--orange-lt);border:1.5px solid var(--orange-mid);border-radius:var(--r);padding:11px 14px;margin-bottom:12px">
+        <div class="geodet-avatar" style="background:${geodetColor(state.filterGeodet)};width:30px;height:30px;font-size:12px;border-radius:8px;flex-shrink:0">${initials(state.filterGeodet)}</div>
+        <span style="font-family:var(--font-h);font-size:14px;font-weight:700;color:var(--orange);flex:1">Úkoly: ${state.filterGeodet}</span>
+        <button onclick="clearFilterGeodet()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:2px 4px" title="Zrušit filtr">✕</button>
+    </div>` : ''}
     <div class="filter-bar">
         ${tabs.map(([f,cls,label,count]) => `
             <button class="ftab ${cls} ${state.filter===f?'active':''}" onclick="setFilter('${f}')">
@@ -1246,7 +1254,7 @@ function renderTeam() {
             </div>
             ${total > 0 ? `
             <div class="task-actions">
-                <button class="tact tact-ghost" onclick="setView('tasks');setFilter('all')">Zobrazit úkoly →</button>
+                <button class="tact tact-ghost" onclick="setView('tasks');setFilterGeodet('${g}')">Zobrazit úkoly (${total}) →</button>
             </div>` : ''}
         </div>`;
     }).join('');
@@ -1330,8 +1338,10 @@ function render() {
         </nav>
     </div>`;
 
-    window.setView   = function(v) { state.view=v; state.filter='all'; render(); };
+    window.setView   = function(v) { state.view=v; state.filter='all'; state.filterGeodet=null; render(); };
     window.setFilter = function(f) { state.filterTol=f; state.filter=f; render(); };
+    window.setFilterGeodet = function(g) { state.filterGeodet=g; state.filter='all'; state.view='tasks'; render(); };
+    window.clearFilterGeodet = function() { state.filterGeodet=null; render(); };
 }
 
 render();
