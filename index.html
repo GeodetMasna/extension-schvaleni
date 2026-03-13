@@ -2,483 +2,604 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIM Koordinátor · Geodetická zaměření</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GEODET FIELD · Hlavní geodet</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         :root {
-            --bg:        #0d1117;
-            --bg2:       #161b22;
-            --bg3:       #1c2430;
-            --surface:   #21262d;
-            --surface2:  #2d333b;
-            --border:    #30363d;
-            --border2:   #3d444d;
-
-            --teal:      #0ea5e9;
-            --teal-dim:  #0369a1;
-            --teal-glow: rgba(14,165,233,.15);
-            --amber:     #f59e0b;
-            --amber-dim: rgba(245,158,11,.15);
-            --red:       #ef4444;
-            --red-dim:   rgba(239,68,68,.15);
-            --green:     #22c55e;
-            --green-dim: rgba(34,197,94,.15);
-            --purple:    #a855f7;
-
-            --text:      #e6edf3;
-            --text2:     #8b949e;
-            --text3:     #484f58;
-
-            --font-display: 'Barlow Condensed', sans-serif;
-            --font-body:    'Barlow', sans-serif;
-            --font-mono:    'Space Mono', monospace;
-
-            --radius:    10px;
-            --radius-lg: 14px;
-            --shadow:    0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
+            --orange:     #f97316;
+            --orange-dk:  #ea6c0a;
+            --orange-lt:  #fff7ed;
+            --orange-mid: #fed7aa;
+            --blue:       #2563eb;
+            --blue-lt:    #eff6ff;
+            --green:      #16a34a;
+            --green-lt:   #f0fdf4;
+            --purple:     #7c3aed;
+            --purple-lt:  #f5f3ff;
+            --red:        #dc2626;
+            --red-lt:     #fef2f2;
+            --amber:      #d97706;
+            --amber-lt:   #fffbeb;
+            --bg:         #f4f5f7;
+            --surface:    #ffffff;
+            --text:       #111827;
+            --text2:      #4b5563;
+            --text3:      #9ca3af;
+            --border:     #e5e7eb;
+            --border2:    #d1d5db;
+            --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+            --shadow:     0 4px 12px rgba(0,0,0,.10);
+            --shadow-lg:  0 8px 32px rgba(0,0,0,.14);
+            --r:          12px;
+            --r-sm:       8px;
+            --font-h:     'Exo 2', sans-serif;
+            --font-b:     'Public Sans', sans-serif;
         }
 
-        body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font-b);
+            background: var(--bg);
+            color: var(--text);
+            overscroll-behavior: none;
+        }
 
-        h1,h2,h3,h4 { font-family: var(--font-display); letter-spacing: -.3px; }
+        /* ─── OFFLINE BANNER ─── */
+        #offlineBanner {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: var(--amber); color: #fff;
+            text-align: center; font-size: 12px; font-weight: 700;
+            padding: 6px; letter-spacing: .3px;
+        }
+        #offlineBanner.show { display: block; }
+        #syncIndicator {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: var(--blue); color: #fff;
+            text-align: center; font-size: 12px; font-weight: 600;
+            padding: 6px;
+        }
+        #syncIndicator.show { display: block; }
 
-        /* scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+        /* ─── APP SHELL ─── */
+        #app { display: flex; flex-direction: column; min-height: 100dvh; }
 
-        /* ── LAYOUT ── */
-        .layout { display: flex; min-height: 100vh; }
-
-        /* ── SIDEBAR ── */
-        .sidebar {
-            width: 230px; background: var(--bg2);
-            border-right: 1px solid var(--border);
-            display: flex; flex-direction: column;
-            position: fixed; top:0; left:0; bottom:0; z-index: 100;
-        }
-        .sidebar-header {
-            padding: 20px 16px 16px;
-            border-bottom: 1px solid var(--border);
-        }
-        .logo { display: flex; align-items: center; gap: 10px; }
-        .logo-cube {
-            width: 34px; height: 34px; background: var(--teal);
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 17px; flex-shrink: 0;
-            box-shadow: 0 0 20px rgba(14,165,233,.4);
-        }
-        .logo-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.1; }
-        .logo-role { font-size: 10px; font-weight: 500; color: var(--teal); letter-spacing: 1.5px; text-transform: uppercase; }
-
-        .sidebar-nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
-        .nav-section { margin-bottom: 20px; }
-        .nav-section-label {
-            font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
-            color: var(--text3); padding: 0 8px; margin-bottom: 4px;
-        }
-        .nav-btn {
-            display: flex; align-items: center; gap: 9px; width: 100%;
-            padding: 8px 10px; border-radius: 8px; border: none; background: transparent;
-            color: var(--text2); font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
-            cursor: pointer; transition: all .15s; text-align: left; margin-bottom: 1px;
-        }
-        .nav-btn:hover { background: var(--surface); color: var(--text); }
-        .nav-btn.active { background: var(--teal-glow); color: var(--teal); border-left: 2px solid var(--teal); padding-left: 8px; }
-        .nav-btn .ni { font-size: 15px; width: 18px; text-align: center; }
-        .nav-chip {
-            margin-left: auto; font-size: 11px; font-weight: 700; font-family: var(--font-mono);
-            padding: 1px 7px; border-radius: 99px;
-        }
-        .chip-teal { background: var(--teal-glow); color: var(--teal); }
-        .chip-amber { background: var(--amber-dim); color: var(--amber); }
-        .chip-red { background: var(--red-dim); color: var(--red); }
-
-        .sidebar-footer {
-            padding: 12px 10px; border-top: 1px solid var(--border);
-        }
-        .user-row { display: flex; align-items: center; gap: 9px; padding: 8px 8px; }
-        .user-ava {
-            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-            background: linear-gradient(135deg,var(--teal),var(--purple));
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 13px; overflow: hidden;
-        }
-        .user-ava img { width: 100%; height: 100%; object-fit: cover; }
-        .user-info { flex: 1; min-width: 0; }
-        .user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .user-tag { font-size: 10px; color: var(--teal); font-weight: 600; letter-spacing: .5px; }
-        .signout-btn {
-            background: transparent; border: none; color: var(--text3); cursor: pointer;
-            font-size: 15px; padding: 5px; border-radius: 6px; transition: all .15s;
-        }
-        .signout-btn:hover { background: var(--red-dim); color: var(--red); }
-
-        /* ── MAIN ── */
-        .main { margin-left: 230px; flex: 1; min-height: 100vh; }
-
-        /* ── TOPBAR ── */
+        /* ─── TOPBAR ─── */
         .topbar {
-            background: var(--bg2); border-bottom: 1px solid var(--border);
-            padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
+            background: var(--surface);
+            border-bottom: 2px solid var(--orange);
+            padding: 14px 16px 12px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow-sm);
         }
-        .topbar-left { display: flex; align-items: center; gap: 10px; }
-        .breadcrumb { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
-        .breadcrumb span { color: var(--text2); }
-        .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); }
-        .topbar-right { display: flex; gap: 8px; align-items: center; }
-
-        /* ── BUTTONS ── */
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: var(--radius); font-family: var(--font-body);
-            font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s;
+        .topbar-brand {
+            display: flex; align-items: center; gap: 10px;
         }
-        .btn-teal { background: var(--teal); color: #fff; }
-        .btn-teal:hover { background: #38bdf8; box-shadow: 0 0 16px rgba(14,165,233,.4); }
-        .btn-ghost { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); }
-        .btn-ghost:hover { background: var(--surface2); color: var(--text); }
-        .btn-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
-        .btn-amber:hover { background: rgba(245,158,11,.25); }
-        .btn-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
-        .btn-red:hover { background: rgba(239,68,68,.25); }
-        .btn-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
-        .btn-green:hover { background: rgba(34,197,94,.25); }
-        .btn-sm { padding: 5px 11px; font-size: 12px; }
-
-        /* ── PAGE CONTENT ── */
-        .page-content { padding: 24px 28px 48px; }
-
-        /* ── SECTION ── */
-        .section-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-        /* ── KPI STRIP ── */
-        .kpi-strip { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
-        .kpi {
-            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
-            padding: 16px 18px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: var(--orange); border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
         }
-        .kpi:hover { border-color: var(--border2); transform: translateY(-1px); }
-        .kpi.active-kpi { border-color: var(--teal); background: var(--teal-glow); }
-        .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
-        .kpi-val { font-family: var(--font-mono); font-size: 32px; font-weight: 700; line-height: 1; }
-        .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: var(--font-mono); }
-        .kpi-teal .kpi-val { color: var(--teal); }
-        .kpi-amber .kpi-val { color: var(--amber); }
-        .kpi-red .kpi-val { color: var(--red); }
-        .kpi-green .kpi-val { color: var(--green); }
-        .kpi-purple .kpi-val { color: var(--purple); }
-
-        /* ── CHARTS GRID ── */
-        .charts-grid { display: grid; grid-template-columns: 1.2fr 2fr; gap: 16px; margin-bottom: 24px; }
-        .chart-card {
-            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px;
+        .brand-name {
+            font-family: var(--font-h); font-size: 17px; font-weight: 800;
+            color: var(--text); letter-spacing: -.3px; line-height: 1;
         }
-        .chart-card-wide { grid-column: 1 / -1; }
-        .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-        .chart-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); }
-        .chart-sub { font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-top: 2px; }
-
-        /* ── COVERAGE BAR ── */
-        .coverage-grid { display: grid; gap: 8px; }
-        .cov-row { display: flex; align-items: center; gap: 10px; }
-        .cov-label { font-size: 12px; font-family: var(--font-mono); color: var(--text2); width: 80px; flex-shrink: 0; }
-        .cov-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
-        .cov-fill { height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
-        .cov-pct { font-size: 11px; font-family: var(--font-mono); color: var(--text2); width: 32px; text-align: right; }
-        .cov-count { font-size: 11px; font-family: var(--font-mono); color: var(--text3); width: 36px; text-align: right; }
-
-        /* ── DEVIATION CARDS ── */
-        .dev-grid { display: grid; gap: 10px; margin-bottom: 24px; }
-        .dev-card {
-            background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
-            padding: 18px 20px; transition: all .2s;
-            display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: start;
+        .brand-role { font-size: 10px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: .8px; }
+        .topbar-right { display: flex; align-items: center; gap: 8px; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: var(--r-sm);
+            border: none; background: var(--bg); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; transition: background .15s; -webkit-tap-highlight-color: transparent;
         }
-        .dev-card:hover { border-color: var(--border2); }
-        .dev-card.crit { border-left: 3px solid var(--red); }
-        .dev-card.warn { border-left: 3px solid var(--amber); }
-        .dev-card.ok   { border-left: 3px solid var(--green); }
-        .dev-card.proc { border-left: 3px solid var(--teal); }
-        .dev-card.new  { border-left: 3px solid var(--purple); }
+        .icon-btn:active { background: var(--border); }
+        .notif-dot {
+            position: relative;
+        }
+        .notif-dot::after {
+            content: '';
+            position: absolute; top: 6px; right: 6px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--red); border: 2px solid var(--surface);
+        }
 
-        .dev-status-icon { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-        .icon-crit { background: var(--red-dim); }
-        .icon-warn { background: var(--amber-dim); }
-        .icon-ok   { background: var(--green-dim); }
-        .icon-proc { background: var(--teal-glow); }
-        .icon-new  { background: rgba(168,85,247,.15); }
+        /* ─── BOTTOM NAV ─── */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: var(--surface);
+            border-top: 1.5px solid var(--border);
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -4px 16px rgba(0,0,0,.08);
+        }
+        .bnav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 3px; padding: 10px 4px 8px;
+            border: none; background: transparent; cursor: pointer;
+            color: var(--text3); font-family: var(--font-b); font-size: 10px; font-weight: 600;
+            letter-spacing: .3px; text-transform: uppercase; transition: color .15s;
+            position: relative;
+        }
+        .bnav-item.active { color: var(--orange); }
+        .bnav-item.active::after {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 24px; height: 3px; background: var(--orange); border-radius: 0 0 3px 3px;
+        }
+        .bnav-icon { font-size: 20px; line-height: 1; }
+        .bnav-badge {
+            position: absolute; top: 6px; right: calc(50% - 18px);
+            background: var(--red); color: #fff;
+            font-size: 9px; font-weight: 800; padding: 1px 5px;
+            border-radius: 99px; font-family: var(--font-h);
+        }
 
-        .dev-main {}
-        .dev-obj { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.1; }
-        .dev-meta { font-size: 12px; color: var(--text3); margin-top: 3px; font-family: var(--font-mono); }
-        .dev-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-        .dev-note { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
-        .dev-bcf-link {
+        /* ─── CONTENT AREA ─── */
+        .content {
+            flex: 1;
+            padding: 14px 14px calc(74px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+        }
+
+        /* ─── SECTION HEADER ─── */
+        .sec-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .sec-title {
+            font-family: var(--font-h); font-size: 13px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text2);
+        }
+        .sec-link {
+            font-size: 12px; font-weight: 600; color: var(--orange);
+            background: none; border: none; cursor: pointer;
+        }
+
+        /* ─── STATS ROW (home) ─── */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-tile {
+            background: var(--surface); border-radius: var(--r);
+            padding: 14px 16px; box-shadow: var(--shadow-sm);
+            border-left: 4px solid transparent;
+            cursor: pointer; transition: transform .15s;
+        }
+        .stat-tile:active { transform: scale(.97); }
+        .stat-tile.t-orange { border-left-color: var(--orange); }
+        .stat-tile.t-blue   { border-left-color: var(--blue); }
+        .stat-tile.t-purple { border-left-color: var(--purple); }
+        .stat-tile.t-green  { border-left-color: var(--green); }
+        .stat-tile.t-red    { border-left-color: var(--red); }
+        .stat-num {
+            font-family: var(--font-h); font-size: 36px; font-weight: 900;
+            line-height: 1; margin-bottom: 2px;
+        }
+        .t-orange .stat-num { color: var(--orange); }
+        .t-blue   .stat-num { color: var(--blue); }
+        .t-purple .stat-num { color: var(--purple); }
+        .t-green  .stat-num { color: var(--green); }
+        .t-red    .stat-num { color: var(--red); }
+        .stat-lbl { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .4px; }
+
+        /* ─── TEAM BOARD ─── */
+        .team-board {
+            display: flex; gap: 10px;
+            overflow-x: auto; padding-bottom: 4px;
+            margin: 0 -14px; padding-left: 14px; padding-right: 14px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .team-board::-webkit-scrollbar { display: none; }
+        .geodet-col {
+            background: var(--surface); border-radius: var(--r);
+            min-width: 160px; max-width: 160px;
+            box-shadow: var(--shadow-sm); padding: 12px 10px;
+            flex-shrink: 0;
+        }
+        .geodet-col-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .geodet-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-h); font-size: 14px; font-weight: 800;
+            color: #fff; flex-shrink: 0;
+        }
+        .geodet-col-name { font-family: var(--font-h); font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .geodet-col-count { font-size: 10px; font-weight: 600; color: var(--text3); }
+        .geodet-mini-task {
+            background: var(--bg); border-radius: 6px; padding: 7px 8px;
+            margin-bottom: 6px; border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+        .geodet-mini-task:active { opacity: .8; }
+        .gmt-obj { font-family: var(--font-h); font-size: 12px; font-weight: 700; color: var(--text); }
+        .gmt-status { font-size: 10px; font-weight: 600; margin-top: 1px; }
+        .gmt-assigned { border-left-color: var(--orange); }
+        .gmt-assigned .gmt-status { color: var(--orange); }
+        .gmt-review   { border-left-color: var(--purple); }
+        .gmt-review   .gmt-status { color: var(--purple); }
+        .gmt-done     { border-left-color: var(--green); opacity: .65; }
+        .gmt-done     .gmt-status { color: var(--green); }
+        .geodet-col-empty { font-size: 11px; color: var(--text3); text-align: center; padding: 10px 0; }
+        .geodet-col-free { background: var(--green-lt); border: 1.5px dashed #bbf7d0; }
+        .geodet-col-free .geodet-col-name { color: var(--green); }
+
+        /* ─── TASK CARD ─── */
+        .task-card {
+            background: var(--surface); border-radius: var(--r);
+            box-shadow: var(--shadow-sm); margin-bottom: 10px;
+            overflow: hidden; transition: box-shadow .15s;
+        }
+        .task-card:active { box-shadow: var(--shadow); }
+        .task-card-head {
+            padding: 14px 14px 10px;
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+        .task-status-bar {
+            width: 4px; border-radius: 99px; flex-shrink: 0;
+            align-self: stretch; min-height: 40px;
+        }
+        .bar-new     { background: var(--blue); }
+        .bar-assigned{ background: var(--orange); }
+        .bar-review  { background: var(--purple); }
+        .bar-done    { background: var(--green); }
+        .bar-returned{ background: var(--red); }
+        .task-main { flex: 1; min-width: 0; }
+        .task-obj {
+            font-family: var(--font-h); font-size: 18px; font-weight: 800;
+            color: var(--text); line-height: 1; margin-bottom: 4px;
+        }
+        .task-meta { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+        .task-note { font-size: 13px; color: var(--text2); line-height: 1.5; }
+        .task-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+        .chip {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 700;
+            font-family: var(--font-h); letter-spacing: .2px;
+        }
+        .chip-new      { background: var(--blue-lt);   color: var(--blue); }
+        .chip-assigned { background: var(--orange-lt); color: var(--orange); }
+        .chip-review   { background: var(--purple-lt); color: var(--purple); }
+        .chip-done     { background: var(--green-lt);  color: var(--green); }
+        .chip-returned { background: var(--red-lt);    color: var(--red); }
+        .chip-gray     { background: var(--bg);        color: var(--text2); }
+        .task-date { font-size: 11px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+
+        /* ─── TASK ACTIONS STRIP ─── */
+        .task-actions {
+            border-top: 1px solid var(--border);
+            padding: 8px 10px;
+            display: flex; gap: 6px; overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .task-actions::-webkit-scrollbar { display: none; }
+        .tact {
             display: inline-flex; align-items: center; gap: 5px;
-            font-size: 11px; font-family: var(--font-mono); font-weight: 700;
-            color: var(--teal); background: var(--teal-glow); padding: 3px 8px; border-radius: 5px; text-decoration: none;
+            padding: 8px 12px; border-radius: var(--r-sm);
+            font-family: var(--font-b); font-size: 13px; font-weight: 600;
+            border: none; cursor: pointer; white-space: nowrap; transition: all .15s;
+            flex-shrink: 0;
         }
-        .dev-bcf-link:hover { background: rgba(14,165,233,.25); }
+        .tact:active { transform: scale(.96); }
+        .tact-primary { background: var(--orange); color: #fff; }
+        .tact-primary:active { background: var(--orange-dk); }
+        .tact-ghost { background: var(--bg); color: var(--text2); border: 1.5px solid var(--border2); }
+        .tact-ghost:active { background: var(--border); }
+        .tact-purple { background: var(--purple-lt); color: var(--purple); }
+        .tact-green  { background: var(--green-lt);  color: var(--green); }
+        .tact-red    { background: var(--red-lt);    color: var(--red); }
+        .tact-blue   { background: var(--blue-lt);   color: var(--blue); }
 
-        .dev-right { text-align: right; flex-shrink: 0; }
-        .dev-tolerance-block { }
-        .dev-tol-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); font-family: var(--font-mono); }
-        .dev-tol-val { font-family: var(--font-mono); font-size: 26px; font-weight: 700; line-height: 1.1; }
-        .dev-tol-req { font-size: 11px; font-family: var(--font-mono); color: var(--text3); margin-top: 1px; }
-        .dev-actions { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        /* ─── TERMIN BLOCK (inside card) ─── */
+        .termin-strip {
+            margin: 0 14px 10px;
+            padding: 10px 12px; border-radius: 8px;
+            font-size: 13px; font-weight: 500;
+        }
+        .termin-pending  { background: var(--amber-lt); border-left: 3px solid var(--amber); color: #92400e; }
+        .termin-confirmed{ background: var(--green-lt); border-left: 3px solid var(--green); color: var(--green); }
 
-        /* ── TAG / BADGE ── */
-        .tag {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--font-mono);
-        }
-        .tag-crit { background: var(--red-dim); color: var(--red); }
-        .tag-warn { background: var(--amber-dim); color: var(--amber); }
-        .tag-ok   { background: var(--green-dim); color: var(--green); }
-        .tag-proc { background: var(--teal-glow); color: var(--teal); }
-        .tag-new  { background: rgba(168,85,247,.15); color: var(--purple); }
-        .tag-type { background: var(--surface2); color: var(--text2); }
+        /* ─── REVIEW CARD HIGHLIGHT ─── */
+        .task-card.needs-review { border: 2px solid var(--purple); }
+        .task-card.needs-review .task-card-head { background: var(--purple-lt); }
 
-        /* ── TOLERANCE GAUGE ── */
-        .tol-gauge { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-        .tol-track { flex: 1; height: 4px; background: var(--surface2); border-radius: 99px; overflow: visible; position: relative; }
-        .tol-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
-        .tol-marker { position: absolute; top: -4px; width: 2px; height: 12px; background: var(--text3); border-radius: 1px; }
-        .tol-nums { display: flex; justify-content: space-between; font-size: 9px; font-family: var(--font-mono); color: var(--text3); margin-top: 2px; }
+        /* ─── RETURNED CARD ─── */
+        .task-card.returned { border: 2px solid var(--red); }
+        .return-reason {
+            margin: 0 14px 10px; padding: 10px 12px;
+            background: var(--red-lt); border-left: 3px solid var(--red);
+            border-radius: 8px; font-size: 13px; color: var(--red);
+        }
 
-        /* ── ASSIGN ROW ── */
-        .assign-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-        .assign-label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); flex-shrink: 0; }
-        .assign-select {
-            flex: 1; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border2);
-            border-radius: 7px; font-family: var(--font-body); font-size: 13px; color: var(--text); outline: none;
+        /* ─── INLINE EXPAND ─── */
+        .expand-panel { display: none; border-top: 1px solid var(--border); }
+        .expand-panel.open { display: block; }
+        .expand-body { padding: 14px; }
+        .exp-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); margin-bottom: 6px; }
+        .exp-select {
+            width: 100%; padding: 12px 14px;
+            background: var(--bg); border: 1.5px solid var(--border2);
+            border-radius: var(--r-sm); font-family: var(--font-b); font-size: 15px;
+            color: var(--text); outline: none; -webkit-appearance: none; appearance: none;
         }
-        .assign-select:focus { border-color: var(--teal); }
-        .reassign-wrap { margin-top: 8px; }
-        .reassign-select {
-            width: 100%; padding: 6px 10px; background: var(--bg); border: 1px solid rgba(245,158,11,.4);
-            border-radius: 7px; font-family: var(--font-body); font-size: 13px; color: var(--text); outline: none;
+        .exp-select:focus { border-color: var(--orange); }
+        .exp-textarea {
+            width: 100%; padding: 12px 14px;
+            background: var(--bg); border: 1.5px solid var(--border2);
+            border-radius: var(--r-sm); font-family: var(--font-b); font-size: 15px;
+            color: var(--text); outline: none; min-height: 80px; resize: vertical;
         }
-        .reassign-panel { display: none; margin-top: 8px; padding: 10px; background: var(--amber-dim); border-radius: 8px; border: 1px solid rgba(245,158,11,.2); }
-        .reassign-panel.open { display: block; }
-        .reassign-warn { font-size: 11px; color: var(--amber); font-family: var(--font-mono); margin-bottom: 6px; }
+        .exp-textarea:focus { border-color: var(--orange); }
+        .exp-confirm-btn {
+            width: 100%; margin-top: 10px; padding: 14px;
+            background: var(--orange); color: #fff; border: none;
+            border-radius: var(--r-sm); font-family: var(--font-h); font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: background .15s;
+        }
+        .exp-confirm-btn:active { background: var(--orange-dk); }
+        .exp-confirm-btn.green { background: var(--green); }
+        .exp-confirm-btn.green:active { background: #15803d; }
 
-        /* ── MODAL ── */
-        .modal-backdrop {
-            display: none; position: fixed; inset: 0; z-index: 300;
-            background: rgba(1,4,9,.75); backdrop-filter: blur(6px);
-            align-items: center; justify-content: center; padding: 20px;
+        /* ─── FAB ─── */
+        .fab {
+            position: fixed; bottom: calc(76px + env(safe-area-inset-bottom)); right: 16px; z-index: 99;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--orange); color: #fff; font-size: 26px; font-weight: 300;
+            border: none; box-shadow: 0 4px 20px rgba(249,115,22,.5);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform .15s, box-shadow .15s;
         }
-        .modal-backdrop.open { display: flex; }
-        .modal {
-            background: var(--bg2); border: 1px solid var(--border2);
-            border-radius: 18px; padding: 28px; width: 100%; max-width: 560px;
-            box-shadow: 0 24px 80px rgba(0,0,0,.6); animation: modal-pop .2s ease;
-            max-height: 90vh; overflow-y: auto;
+        .fab:active { transform: scale(.93); box-shadow: 0 2px 10px rgba(249,115,22,.4); }
+
+        /* ─── FILTER BAR ─── */
+        .filter-bar {
+            display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px;
+            margin-bottom: 14px; scrollbar-width: none;
         }
-        @keyframes modal-pop { from { transform: scale(.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-        .modal-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-        .form-row.single { grid-template-columns: 1fr; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--text3); font-family: var(--font-mono); }
+        .filter-bar::-webkit-scrollbar { display: none; }
+        .ftab {
+            padding: 8px 14px; border-radius: 99px; font-size: 13px; font-weight: 700;
+            border: 2px solid var(--border2); background: var(--surface); color: var(--text2);
+            cursor: pointer; white-space: nowrap; transition: all .15s; flex-shrink: 0;
+            font-family: var(--font-h);
+        }
+        .ftab:active { transform: scale(.96); }
+        .ftab.f-all     { border-color: var(--text2); color: var(--text2); }
+        .ftab.f-all.active     { border-color: var(--text); background: var(--text); color: #fff; }
+        .ftab.f-new.active     { border-color: var(--blue); background: var(--blue); color: #fff; }
+        .ftab.f-assigned.active{ border-color: var(--orange); background: var(--orange); color: #fff; }
+        .ftab.f-review.active  { border-color: var(--purple); background: var(--purple); color: #fff; }
+        .ftab.f-done.active    { border-color: var(--green); background: var(--green); color: #fff; }
+        .ftab.f-returned.active{ border-color: var(--red); background: var(--red); color: #fff; }
+
+        /* ─── MODAL SHEET ─── */
+        .sheet-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,.5); backdrop-filter: blur(3px);
+        }
+        .sheet-backdrop.open { display: block; }
+        .sheet {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+            background: var(--surface); border-radius: 20px 20px 0 0;
+            padding: 0 0 env(safe-area-inset-bottom);
+            box-shadow: 0 -8px 40px rgba(0,0,0,.2);
+            transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+            max-height: 92dvh; overflow-y: auto;
+            display: none;
+        }
+        .sheet.open { transform: translateY(0); display: block; }
+        .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; margin: 12px auto 0; }
+        .sheet-title {
+            font-family: var(--font-h); font-size: 20px; font-weight: 800;
+            padding: 16px 20px 4px; color: var(--text);
+        }
+        .sheet-sub { font-size: 13px; color: var(--text2); padding: 0 20px 16px; border-bottom: 1px solid var(--border); }
+        .sheet-body { padding: 16px 20px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); margin-bottom: 5px; display: block; }
         .form-input, .form-select, .form-textarea {
-            padding: 10px 13px; background: var(--surface); border: 1px solid var(--border2);
-            border-radius: 8px; font-family: var(--font-body); font-size: 14px; color: var(--text); outline: none;
-            transition: border .15s;
+            width: 100%; padding: 13px 14px;
+            background: var(--bg); border: 1.5px solid var(--border2);
+            border-radius: var(--r-sm); font-family: var(--font-b); font-size: 16px;
+            color: var(--text); outline: none; -webkit-appearance: none; appearance: none;
         }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--teal); background: var(--bg3); }
-        .form-textarea { min-height: 80px; resize: vertical; }
-        .form-input::placeholder, .form-textarea::placeholder { color: var(--text3); }
-        .modal-footer { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
-
-        /* ── TERMIN MODAL ── */
-        #terminModal .modal { max-width: 400px; }
-
-        /* ── EMPTY ── */
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-        .empty-icon { font-size: 36px; margin-bottom: 10px; }
-        .empty-text { font-size: 14px; }
-
-        /* ── SPINNER ── */
-        .spinner-full { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .spinner { width: 40px; height: 40px; border: 2px solid var(--border2); border-top-color: var(--teal); border-radius: 50%; animation: spin .65s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner-text { color: var(--text3); font-size: 13px; font-family: var(--font-mono); margin-top: 12px; }
-
-        /* ── LOGIN ── */
-        .login-bg {
-            min-height: 100vh; background: var(--bg);
-            display: flex; align-items: center; justify-content: center; padding: 20px;
-            background-image: radial-gradient(ellipse 60% 40% at 60% 30%, rgba(14,165,233,.08) 0%, transparent 60%),
-                              radial-gradient(ellipse 40% 60% at 20% 80%, rgba(168,85,247,.06) 0%, transparent 60%);
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--orange); background: var(--surface); }
+        .form-textarea { min-height: 90px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sheet-footer { padding: 12px 20px 8px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .sheet-btn {
+            flex: 1; padding: 15px; border-radius: var(--r-sm); border: none;
+            font-family: var(--font-h); font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: all .15s;
         }
-        .login-card {
-            background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-            padding: 44px; max-width: 400px; width: 100%; box-shadow: var(--shadow-lg);
+        .sheet-btn:active { transform: scale(.97); }
+        .sheet-btn-primary { background: var(--orange); color: #fff; }
+        .sheet-btn-ghost { background: var(--bg); color: var(--text2); border: 1.5px solid var(--border2); }
+
+        /* ─── TERMIN SHEET ─── */
+        #terminSheet {}
+
+        /* ─── LOGIN ─── */
+        .login-page {
+            min-height: 100dvh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 28px 20px;
+            background: var(--text);
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(249,115,22,.04) 0px,
+                rgba(249,115,22,.04) 2px,
+                transparent 2px,
+                transparent 12px
+            );
         }
-        .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
-        .login-cube { width: 44px; height: 44px; background: var(--teal); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 30px rgba(14,165,233,.5); }
-        .login-title { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
-        .login-role { font-size: 12px; color: var(--teal); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
-        .login-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 28px; }
+        .login-icon-wrap {
+            width: 80px; height: 80px; background: var(--orange); border-radius: 22px;
+            display: flex; align-items: center; justify-content: center; font-size: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 60px rgba(249,115,22,.4);
+        }
+        .login-title { font-family: var(--font-h); font-size: 34px; font-weight: 900; color: #fff; text-align: center; margin-bottom: 4px; letter-spacing: -.5px; }
+        .login-sub { font-size: 14px; color: #9ca3af; text-align: center; margin-bottom: 36px; }
+        .login-card { background: var(--surface); border-radius: 18px; padding: 24px; width: 100%; max-width: 360px; box-shadow: var(--shadow-lg); }
         .google-btn {
             width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
-            padding: 13px 20px; border-radius: 10px; border: 1px solid var(--border2);
-            background: var(--surface); font-family: var(--font-body); font-size: 15px; font-weight: 600;
-            color: var(--text); cursor: pointer; transition: all .15s;
+            padding: 15px 20px; border-radius: 12px; border: 1.5px solid var(--border2);
+            background: var(--surface); font-family: var(--font-b); font-size: 16px; font-weight: 600;
+            color: var(--text); cursor: pointer; transition: all .2s;
         }
-        .google-btn:hover { border-color: var(--teal); background: var(--teal-glow); color: var(--teal); box-shadow: 0 0 20px rgba(14,165,233,.2); }
-        .login-note { margin-top: 16px; padding: 10px 14px; background: var(--surface); border-radius: 8px; font-size: 11px; color: var(--text3); font-family: var(--font-mono); text-align: center; }
-        .error-alert { margin-bottom: 20px; padding: 12px 14px; background: var(--red-dim); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; font-size: 13px; color: var(--red); }
+        .google-btn:active { background: var(--bg); transform: scale(.98); }
+        .login-note { margin-top: 14px; font-size: 11px; color: var(--text3); text-align: center; font-family: var(--font-h); letter-spacing: .3px; text-transform: uppercase; }
+        .error-box { margin-bottom: 14px; padding: 12px; background: var(--red-lt); border-radius: 9px; font-size: 13px; color: var(--red); font-weight: 500; }
 
-        /* ── FEATURE PILLS (login) ── */
-        .feature-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
-        .fpill { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); background: var(--surface2); color: var(--text3); }
+        /* ─── SPINNER ─── */
+        .full-spinner { min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border2); border-top-color: var(--orange); border-radius: 50%; animation: spin .65s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── BCF EXPORT MODAL ── */
-        .bcf-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--text2); max-height: 200px; overflow-y: auto; line-height: 1.6; margin-top: 12px; }
+        /* ─── EMPTY STATE ─── */
+        .empty-state { text-align: center; padding: 48px 20px; }
+        .empty-icon { font-size: 44px; margin-bottom: 12px; }
+        .empty-text { font-size: 15px; color: var(--text2); font-weight: 500; }
+        .empty-sub { font-size: 13px; color: var(--text3); margin-top: 4px; }
 
-        /* ── RESP ── */
-        @media (max-width: 960px) {
-            .sidebar { display: none; }
-            .main { margin-left: 0; }
-            .kpi-strip { grid-template-columns: repeat(2,1fr); }
-            .charts-grid { grid-template-columns: 1fr; }
+        /* ─── DIVIDER ─── */
+        .divider { height: 1px; background: var(--border); margin: 4px 0 14px; }
+
+        /* ─── REVIEW QUEUE BANNER ─── */
+        .review-banner {
+            background: var(--purple); color: #fff;
+            border-radius: var(--r); padding: 14px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 14px; cursor: pointer;
         }
+        .review-banner:active { opacity: .9; }
+        .review-banner-icon { font-size: 24px; }
+        .review-banner-count { font-family: var(--font-h); font-size: 28px; font-weight: 900; }
+        .review-banner-text { font-size: 13px; font-weight: 500; opacity: .9; }
+        .review-banner-arrow { margin-left: auto; font-size: 20px; opacity: .7; }
+
+        /* ─── FILE LINKS ─── */
+        .file-links { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 14px 10px; }
+        .file-link {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 11px; border-radius: 7px; font-size: 13px; font-weight: 600;
+            text-decoration: none; transition: all .15s;
+        }
+        .file-link-blue  { background: var(--blue-lt);  color: var(--blue); }
+        .file-link-green { background: var(--green-lt); color: var(--green); }
+        .file-link:active { opacity: .8; }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes slide-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .task-card { animation: slide-in .2s ease both; }
     </style>
 </head>
 <body>
 
-<!-- Nový požadavek modal -->
-<div id="newReqModal" class="modal-backdrop">
-    <div class="modal">
-        <div class="modal-title">⊕ Nový požadavek zaměření</div>
-        <div class="modal-sub">Vazba na BIM model · přesnost · BCF reference</div>
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label">Číslo objektu / Element *</label>
-                <input id="nrObjekt" type="text" class="form-input" placeholder="např. SO-05 / Stěna-3F-A">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Stavební sekce</label>
-                <select id="nrSekce" class="form-select">
-                    <option value="">— Vyberte —</option>
-                    <option>SO-01 Hlavní budova</option>
-                    <option>SO-02 Parkovací dům</option>
-                    <option>SO-03 Přípojky</option>
-                    <option>SO-04 Komunikace</option>
-                    <option>SO-05 Terénní úpravy</option>
-                    <option>Jiné</option>
-                </select>
-            </div>
+<div id="offlineBanner">⚡ Offline — data zobrazena z cache, změny se synchronizují při obnovení spojení</div>
+<div id="syncIndicator">↻ Synchronizuji data…</div>
+
+<!-- NEW TASK SHEET -->
+<div id="newTaskBackdrop" class="sheet-backdrop" onclick="closeNewTask()"></div>
+<div id="newTaskSheet" class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">+ Nový ad-hoc úkol</div>
+    <div class="sheet-sub">Rychlé zadání z terénu</div>
+    <div class="sheet-body">
+        <div class="form-group">
+            <label class="form-label">Číslo objektu / popis místa *</label>
+            <input id="ntObjekt" type="text" class="form-input" placeholder="SO-05 / Stěna 3.NP-A">
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label">Typ zaměření *</label>
-                <select id="nrTyp" class="form-select">
-                    <option value="">— Vyberte typ —</option>
+                <label class="form-label">Typ zaměření</label>
+                <select id="ntTyp" class="form-select">
+                    <option value="">— typ —</option>
                     <option>As-built kontrola</option>
                     <option>Výtyčení</option>
                     <option>Kontrolní měření</option>
-                    <option>Dokumentace odchylek</option>
                     <option>Polohové zaměření</option>
                     <option>Výškové zaměření</option>
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Požadovaná přesnost *</label>
-                <select id="nrPresnost" class="form-select">
-                    <option value="">— Tolerance ±mm —</option>
-                    <option value="2">± 2 mm (nosné prvky)</option>
-                    <option value="5">± 5 mm (betonové stěny)</option>
-                    <option value="10">± 10 mm (masivní konstrukce)</option>
-                    <option value="20">± 20 mm (terén, zemní práce)</option>
-                    <option value="50">± 50 mm (hrubé zemní práce)</option>
+                <label class="form-label">Přiřadit geodetovi</label>
+                <select id="ntGeodet" class="form-select">
+                    <option value="">— přiřadit —</option>
                 </select>
             </div>
         </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label">BCF Issue ID</label>
-                <input id="nrBcf" type="text" class="form-input" placeholder="BCF-042">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Požadované datum</label>
-                <input id="nrDatum" type="date" class="form-input">
-            </div>
-        </div>
-        <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">Trimble Connect odkaz</label>
-                <input id="nrTrimble" type="url" class="form-input" placeholder="https://web.connect.trimble.com/...">
-            </div>
-        </div>
-        <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">IFC GUID (volitelné)</label>
-                <input id="nrGuid" type="text" class="form-input" placeholder="3mfP2yBWfAqBl5vj7...">
-            </div>
-        </div>
-        <div class="form-row single">
-            <div class="form-group">
-                <label class="form-label">Popis / kontext odchylky</label>
-                <textarea id="nrPoznamka" class="form-textarea" placeholder="Vizuálně patrná odchylka stěny od projektované polohy, nutno ověřit zaměřením…"></textarea>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-ghost" style="flex:1" onclick="closeNewReqModal()">Zrušit</button>
-            <button class="btn btn-teal" style="flex:2" onclick="submitNewRequest()">⊕ Vytvořit požadavek</button>
-        </div>
-    </div>
-</div>
-
-<!-- Termin modal -->
-<div id="terminModal" class="modal-backdrop">
-    <div class="modal" style="max-width:400px">
-        <div class="modal-title">📅 Potvrdit termín příjezdu</div>
-        <div class="modal-sub">Termín bude odeslán stavbyvedoucímu emailem</div>
-        <div class="form-group" style="margin-bottom:14px">
-            <label class="form-label">Datum příjezdu *</label>
-            <input type="date" id="modalDatum" class="form-input">
+        <div class="form-group">
+            <label class="form-label">Požadované datum</label>
+            <input id="ntDatum" type="date" class="form-input">
         </div>
         <div class="form-group">
-            <label class="form-label">Čas příjezdu *</label>
-            <input type="time" id="modalCas" class="form-input">
+            <label class="form-label">Poznámka</label>
+            <textarea id="ntPoznamka" class="form-textarea" placeholder="Popis situace, co a proč je třeba zaměřit…"></textarea>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-ghost" style="flex:1" onclick="closeTerminModal()">Zrušit</button>
-            <button class="btn btn-teal" style="flex:1" onclick="confirmTermin()">✓ Potvrdit</button>
-        </div>
+    </div>
+    <div class="sheet-footer">
+        <button class="sheet-btn sheet-btn-ghost" onclick="closeNewTask()">Zrušit</button>
+        <button class="sheet-btn sheet-btn-primary" onclick="submitNewTask()">✓ Vytvořit</button>
     </div>
 </div>
 
-<!-- BCF Export modal -->
-<div id="bcfModal" class="modal-backdrop">
-    <div class="modal" style="max-width:500px">
-        <div class="modal-title">📦 BCF Export</div>
-        <div class="modal-sub">Export odchylek mimo toleranci do BCF formátu pro Navisworks / Trimble Connect</div>
-        <div id="bcfPreview" class="bcf-preview"></div>
-        <div class="modal-footer">
-            <button class="btn btn-ghost" style="flex:1" onclick="closeBcfModal()">Zavřít</button>
-            <button class="btn btn-teal" style="flex:2" onclick="downloadBcf()">⬇ Stáhnout BCF soubor</button>
+<!-- TERMIN SHEET -->
+<div id="terminBackdrop" class="sheet-backdrop" onclick="closeTerminSheet()"></div>
+<div id="terminSheet" class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📅 Potvrdit termín</div>
+    <div class="sheet-sub">Termín bude odeslán emailem stavbyvedoucímu</div>
+    <div class="sheet-body">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Datum *</label>
+                <input id="tsDatum" type="date" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Čas *</label>
+                <input id="tsCas" type="time" class="form-input">
+            </div>
         </div>
+    </div>
+    <div class="sheet-footer">
+        <button class="sheet-btn sheet-btn-ghost" onclick="closeTerminSheet()">Zrušit</button>
+        <button class="sheet-btn sheet-btn-primary" onclick="confirmTermin()">✓ Potvrdit termín</button>
     </div>
 </div>
 
-<div id="root"></div>
+<!-- REVIEW SHEET -->
+<div id="reviewBackdrop" class="sheet-backdrop" onclick="closeReviewSheet()"></div>
+<div id="reviewSheet" class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="reviewSheetTitle">Zkontrolovat výsledek</div>
+    <div class="sheet-sub" id="reviewSheetSub">Schválení nebo vrácení k opravě</div>
+    <div class="sheet-body">
+        <div id="reviewSheetResult"></div>
+        <div class="form-group" id="returnReasonGroup" style="display:none">
+            <label class="form-label">Důvod vrácení *</label>
+            <textarea id="returnReason" class="form-textarea" placeholder="Proč je třeba zaměření opakovat…"></textarea>
+        </div>
+    </div>
+    <div class="sheet-footer">
+        <button class="sheet-btn sheet-btn-ghost" onclick="showReturnForm()" id="returnBtn">✕ Vrátit k opravě</button>
+        <button class="sheet-btn sheet-btn-primary" id="approveBtn" style="background:var(--green)" onclick="approveTask()">✓ Schválit</button>
+    </div>
+</div>
+
+<div id="app"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -498,320 +619,347 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxMcVSWoZgeFU_jE2RUp_INEhZeAOo_T6qAZywQHUg3TTZ71acgvM9CjGQy4eAnXDTLPQ/exec';
+const CACHE_KEY = 'geodet_field_cache';
+const EMAIL_CFG = { serviceId:'service_suouxkq', templateId:'template_assign', publicKey:'CJWpbTlUQfegnb7AK' };
 
-const EMAIL_CONFIG = {
-    serviceId: 'service_suouxkq',
-    templateId: 'template_assign',
-    publicKey: 'CJWpbTlUQfegnb7AK'
-};
-
-emailjs.init(EMAIL_CONFIG.publicKey);
+emailjs.init(EMAIL_CFG.publicKey);
 
 const geodetEmails = {
-    'Dalibor Straka': 'dalibor.straka@strabag.com',
-    'Tomáš Horáček': 'tomas.horacek@strabag.com',
-    'Petr Kočiš': 'petr.kocis@strabag.com',
-    'Michal Apt': 'michal.apt@strabag.com',
-    'Alexandra Pinkovska': 'alexandra.pinkovska@strabag.com',
-    'Matej Kovac': 'matej.kovac@strabag.com',
-    'Roland Klimt': 'roland.klimt@strabag.com',
-    'Martin Morvay': 'martin.morvay@strabag.com'
+    'Dalibor Straka':'dalibor.straka@strabag.com','Tomáš Horáček':'tomas.horacek@strabag.com',
+    'Petr Kočiš':'petr.kocis@strabag.com','Michal Apt':'michal.apt@strabag.com',
+    'Alexandra Pinkovska':'alexandra.pinkovska@strabag.com','Matej Kovac':'matej.kovac@strabag.com',
+    'Roland Klimt':'roland.klimt@strabag.com','Martin Morvay':'martin.morvay@strabag.com'
 };
 
-const ALLOWED_EMAILS = [
-    'mavesela@atlas.cz','tomaula@gmail.com','jan.trnous@gmail.com','michalapt84@gmail.com','michaela.smejkalpeckova@gmail.com'
-];
+const ALLOWED_EMAILS = ['mavesela@atlas.cz','tomaula@gmail.com','jan.trnous@gmail.com','michalapt84@gmail.com','michaela.smejkalpeckova@gmail.com'];
 
 const geodeti = ['Dalibor Straka','Tomáš Horáček','Petr Kočiš','Michal Apt','Alexandra Pinkovska','Matej Kovac','Roland Klimt','Jan Trnka','Martin Morvay'];
 
-let chartDonut = null;
-let chartDeviation = null;
-let chartCoverage = null;
+// Barvy avatarů
+const avatarColors = ['#f97316','#2563eb','#16a34a','#7c3aed','#dc2626','#0891b2','#d97706','#4f46e5','#be185d'];
+const geodetColor = (name) => {
+    const idx = geodeti.indexOf(name);
+    return avatarColors[idx % avatarColors.length] || '#6b7280';
+};
+const initials = (name) => name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
 
+// ── OFFLINE / CACHE ───────────────────────────────────────────────
+let isOnline = navigator.onLine;
+window.addEventListener('online', () => { isOnline = true; document.getElementById('offlineBanner').classList.remove('show'); syncPending(); loadData(); });
+window.addEventListener('offline', () => { isOnline = false; document.getElementById('offlineBanner').classList.add('show'); });
+if (!isOnline) document.getElementById('offlineBanner').classList.add('show');
+
+let pendingActions = JSON.parse(localStorage.getItem('geodet_pending') || '[]');
+
+async function syncPending() {
+    if (!isOnline || pendingActions.length === 0) return;
+    document.getElementById('syncIndicator').classList.add('show');
+    for (const action of [...pendingActions]) {
+        try {
+            await fetch(`${API_URL}?${new URLSearchParams(action)}`);
+            pendingActions = pendingActions.filter(a => a !== action);
+        } catch(e) {}
+    }
+    localStorage.setItem('geodet_pending', JSON.stringify(pendingActions));
+    document.getElementById('syncIndicator').classList.remove('show');
+    await loadData();
+}
+
+async function apiCall(params) {
+    const p = new URLSearchParams(params);
+    if (isOnline) {
+        const r = await fetch(`${API_URL}?${p}`);
+        return r.json();
+    } else {
+        pendingActions.push(params);
+        localStorage.setItem('geodet_pending', JSON.stringify(pendingActions));
+        return { ok: true, offline: true };
+    }
+}
+
+function saveCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
+function loadCache() {
+    try {
+        const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        return c?.data || [];
+    } catch(e) { return []; }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────
 let state = {
-    isAuthenticated: false,
-    isLoading: true,
-    currentUser: null,
-    requests: [],
-    loading: false,
-    loginError: null,
-    view: 'dashboard',
-    filterTol: 'all',
-    terminModal: { open: false, requestId: null }
+    isAuth: false, isLoading: true, currentUser: null,
+    requests: [], loading: false, loginError: null,
+    view: 'home', filter: 'all',
+    terminModal: { reqId: null },
+    reviewModal: { reqId: null, returnMode: false },
 };
 
-// ── TOLERANCE LOGIC ──────────────────────────────────────────────
-function computeTolStatus(req) {
-    const odchylka = parseFloat(req.skutecnaOdchylka);
-    const presnost = parseFloat(req.pozadovanaPresnost);
-    if (isNaN(odchylka) || isNaN(presnost)) return null;
-    if (odchylka <= presnost) return 'ok';
-    if (odchylka <= presnost * 2) return 'warn';
-    return 'crit';
-}
-
-function getDevStatus(req) {
-    if (req.stav === 'Nový') return 'new';
-    if (req.stav === 'Přiřazeno') return 'proc';
-    const tol = computeTolStatus(req);
-    if (tol === 'ok') return 'ok';
-    if (tol === 'warn') return 'warn';
-    if (tol === 'crit') return 'crit';
-    return 'proc';
-}
-
-function tolLabel(status) {
-    if (status === 'ok')   return '<span class="tag tag-ok">✓ V toleranci</span>';
-    if (status === 'warn') return '<span class="tag tag-warn">⚠ Mimo toleranci</span>';
-    if (status === 'crit') return '<span class="tag tag-crit">✕ Kritická odchylka</span>';
-    return '';
-}
-
-function statusTag(req) {
-    const s = getDevStatus(req);
-    if (s === 'new')  return '<span class="tag tag-new">● Nový</span>';
-    if (s === 'proc') return '<span class="tag tag-proc">◌ Zaměřuje se</span>';
-    if (s === 'ok')   return '<span class="tag tag-ok">✓ V toleranci</span>';
-    if (s === 'warn') return '<span class="tag tag-warn">⚠ Mimo toleranci</span>';
-    if (s === 'crit') return '<span class="tag tag-crit">✕ Kritická odchylka</span>';
-    return '';
-}
-
-// ── HELPERS ──────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────
 function parseFileIds(s) { return s ? s.split(',').map(x=>x.trim()).filter(Boolean) : []; }
-function driveUrl(id) { return id ? `https://drive.google.com/file/d/${id}/view` : null; }
+function driveUrl(id)    { return `https://drive.google.com/file/d/${id}/view`; }
 
-// ── DATA ─────────────────────────────────────────────────────────
-async function loadRequests() {
+function getBarClass(stav) {
+    return { 'Nový':'bar-new','Přiřazeno':'bar-assigned','Čeká na kontrolu':'bar-review','Dokončeno':'bar-done','Vráceno':'bar-returned' }[stav] || 'bar-new';
+}
+function getChipHtml(stav) {
+    const map = {
+        'Nový':`<span class="chip chip-new">● Nový</span>`,
+        'Přiřazeno':`<span class="chip chip-assigned">◎ Přiřazeno</span>`,
+        'Čeká na kontrolu':`<span class="chip chip-review">◈ Ke kontrole</span>`,
+        'Dokončeno':`<span class="chip chip-done">✓ Dokončeno</span>`,
+        'Vráceno':`<span class="chip chip-returned">↩ Vráceno</span>`,
+    };
+    return map[stav] || `<span class="chip chip-gray">${stav}</span>`;
+}
+function getMiniClass(stav) {
+    return { 'Přiřazeno':'gmt-assigned','Čeká na kontrolu':'gmt-review','Dokončeno':'gmt-done' }[stav] || 'gmt-assigned';
+}
+
+function filteredRequests() {
+    const f = state.filter;
+    if (f === 'all')     return state.requests;
+    if (f === 'new')     return state.requests.filter(r => r.stav === 'Nový');
+    if (f === 'assigned')return state.requests.filter(r => r.stav === 'Přiřazeno');
+    if (f === 'review')  return state.requests.filter(r => r.stav === 'Čeká na kontrolu');
+    if (f === 'done')    return state.requests.filter(r => r.stav === 'Dokončeno');
+    if (f === 'returned')return state.requests.filter(r => r.stav === 'Vráceno');
+    return state.requests;
+}
+
+// ── DATA ──────────────────────────────────────────────────────────
+async function loadData() {
     state.loading = true; render();
+    // Load from cache first
+    const cached = loadCache();
+    if (cached.length) { state.requests = cached; state.loading = false; render(); }
+    if (!isOnline) { state.loading = false; render(); return; }
     try {
         const r = await fetch(`${API_URL}?action=getAll`);
-        state.requests = await r.json();
-    } catch(e) { console.error(e); alert('❌ Nepodařilo se načíst data'); }
+        const data = await r.json();
+        state.requests = data;
+        saveCache(data);
+    } catch(e) { console.error(e); }
     state.loading = false; render();
 }
 
-// ── NEW REQUEST ───────────────────────────────────────────────────
-window.openNewReqModal = function() { document.getElementById('newReqModal').classList.add('open'); };
-window.closeNewReqModal = function() { document.getElementById('newReqModal').classList.remove('open'); };
-
-window.submitNewRequest = async function() {
-    const objekt   = document.getElementById('nrObjekt').value.trim();
-    const sekce    = document.getElementById('nrSekce').value;
-    const typ      = document.getElementById('nrTyp').value;
-    const presnost = document.getElementById('nrPresnost').value;
-    const bcf      = document.getElementById('nrBcf').value.trim();
-    const datum    = document.getElementById('nrDatum').value;
-    const trimble  = document.getElementById('nrTrimble').value.trim();
-    const guid     = document.getElementById('nrGuid').value.trim();
-    const poznamka = document.getElementById('nrPoznamka').value.trim();
-
-    if (!objekt || !typ || !presnost) {
-        alert('❌ Vyplňte povinná pole: Objekt, Typ zaměření, Přesnost');
-        return;
-    }
-
-    const user = state.currentUser;
-    const noteParts = [
-        poznamka,
-        sekce    ? `[Sekce: ${sekce}]` : '',
-        bcf      ? `[BCF: ${bcf}]` : '',
-        trimble  ? `[TC: ${trimble}]` : '',
-        guid     ? `[IFC: ${guid}]` : '',
-        presnost ? `[Přesnost: ±${presnost}mm]` : ''
-    ].filter(Boolean).join(' ');
-
-    try {
-        const params = new URLSearchParams({
-            action: 'add',
-            objektCislo: objekt,
-            jmeno: user.displayName || user.email,
-            email: user.email,
-            poznamka: noteParts,
-            typZamereni: typ,
-            datumPozadavku: new Date().toLocaleDateString('cs-CZ'),
-            pozadovaneDatum: datum,
-            stav: 'Nový'
-        });
-        await fetch(`${API_URL}?${params}`);
-        alert('✅ Požadavek byl vytvořen a předán hlavnímu geodetovi');
-        document.getElementById('newReqModal').classList.remove('open');
-        await loadRequests();
-    } catch(e) {
-        console.error(e); alert('❌ Nepodařilo se vytvořit požadavek');
-    }
-};
-
-// ── ASSIGN (zjednodušené — BIM coord předává přiřazení hlavnímu geodetovi,
-//    ale může také přiřadit přímo v nouzi) ──────────────────────────────────
-window.assignGeodet = async function(requestId, geodet) {
+// ── ASSIGN ────────────────────────────────────────────────────────
+window.assignGeodet = async function(reqId, geodet) {
     if (!geodet) return;
+    const req = state.requests.find(r => r.id == reqId);
+    if (!req) return;
     try {
-        const req = state.requests.find(r => r.id == requestId);
-        if (!req) return;
-        const params = new URLSearchParams({ action:'update', id:requestId, pridelenyGeodet:geodet, stav:'Přiřazeno' });
-        await fetch(`${API_URL}?${params}`);
+        await apiCall({ action:'update', id:reqId, pridelenyGeodet:geodet, stav:'Přiřazeno' });
+        // Optimistic update
+        req.pridelenyGeodet = geodet; req.stav = 'Přiřazeno';
         const email = geodetEmails[geodet];
-        if (email) {
+        if (email && isOnline) {
             try {
-                await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, {
-                    to_email: email, to_name: geodet,
-                    objekt_cislo: req.objektCislo, poznamka: req.poznamka,
-                    zadal_jmeno: req.jmeno, zadal_email: req.email,
-                    datum_pozadavku: req.datumPozadavku,
-                    app_url: 'https://geodetmasna.github.io/geodet-app/',
+                await emailjs.send(EMAIL_CFG.serviceId, EMAIL_CFG.templateId, {
+                    to_email:email, to_name:geodet, objekt_cislo:req.objektCislo,
+                    poznamka:req.poznamka, zadal_jmeno:req.jmeno, zadal_email:req.email,
+                    datum_pozadavku:req.datumPozadavku,
+                    app_url:'https://geodetmasna.github.io/geodet-app/',
                     ma_prilohu: req.prilohaFileId ? 'Ano' : 'Ne'
                 });
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
-        alert(`✅ Geodet ${geodet} přiřazen${email?' a informován emailem':''}`);
-        await loadRequests();
+        render();
+        if (isOnline) await loadData();
     } catch(e) { alert('❌ Chyba při přiřazení'); }
 };
 
-window.reassignGeodet = async function(requestId, novyGeodet) {
+window.reassignGeodet = async function(reqId, novyGeodet) {
     if (!novyGeodet) return;
-    const req = state.requests.find(r => r.id == requestId);
+    const req = state.requests.find(r => r.id == reqId);
     if (!req) return;
     const puvodni = req.pridelenyGeodet;
     if (novyGeodet === puvodni) { alert('⚠️ Stejný geodet'); return; }
     if (!confirm(`Přeřadit "${req.objektCislo}"?\n${puvodni} → ${novyGeodet}`)) { render(); return; }
     try {
-        const params = new URLSearchParams({ action:'update', id:requestId, pridelenyGeodet:novyGeodet, stav:'Přiřazeno' });
-        await fetch(`${API_URL}?${params}`);
+        await apiCall({ action:'update', id:reqId, pridelenyGeodet:novyGeodet, stav:'Přiřazeno' });
+        req.pridelenyGeodet = novyGeodet; req.stav = 'Přiřazeno';
         const email = geodetEmails[novyGeodet];
-        if (email) {
+        if (email && isOnline) {
             try {
-                await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, {
-                    to_email: email, to_name: novyGeodet,
-                    objekt_cislo: req.objektCislo,
-                    poznamka: `[PŘEŘAZENO od: ${puvodni}] ${req.poznamka}`,
-                    zadal_jmeno: req.jmeno, zadal_email: req.email,
-                    datum_pozadavku: req.datumPozadavku,
-                    app_url: 'https://geodetmasna.github.io/geodet-app/',
+                await emailjs.send(EMAIL_CFG.serviceId, EMAIL_CFG.templateId, {
+                    to_email:email, to_name:novyGeodet, objekt_cislo:req.objektCislo,
+                    poznamka:`[PŘEŘAZENO od: ${puvodni}] ${req.poznamka}`,
+                    zadal_jmeno:req.jmeno, zadal_email:req.email,
+                    datum_pozadavku:req.datumPozadavku,
+                    app_url:'https://geodetmasna.github.io/geodet-app/',
                     ma_prilohu: req.prilohaFileId ? 'Ano' : 'Ne'
                 });
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
-        alert(`✅ Přeřazeno na ${novyGeodet}`);
-        await loadRequests();
+        render();
+        if (isOnline) await loadData();
     } catch(e) { alert('❌ Chyba při přeřazení'); }
 };
 
-window.toggleReassign = function(id) {
-    const p = document.getElementById(`rp-${id}`);
-    if (p) p.classList.toggle('open');
+// ── REVIEW / SCHVÁLENÍ ────────────────────────────────────────────
+let reviewReqId = null;
+let returnMode = false;
+
+window.openReviewSheet = function(reqId) {
+    reviewReqId = reqId;
+    returnMode = false;
+    const req = state.requests.find(r => r.id == reqId);
+    if (!req) return;
+    document.getElementById('reviewSheetTitle').textContent = `Zkontrolovat: ${req.objektCislo}`;
+    document.getElementById('reviewSheetSub').textContent = `Geodet: ${req.pridelenyGeodet} · Dokončeno: ${req.datumDokonceni||'—'}`;
+    const fotkyIds = parseFileIds(req.fotkaFileId);
+    document.getElementById('reviewSheetResult').innerHTML = `
+        ${req.typZamereni ? `<div style="margin-bottom:8px"><span class="chip chip-gray">${req.typZamereni}</span></div>` : ''}
+        ${req.poznamkaGeodeta ? `<div style="background:var(--bg);border-radius:8px;padding:12px;font-size:14px;color:var(--text2);margin-bottom:12px">"${req.poznamkaGeodeta}"</div>` : ''}
+        ${fotkyIds.length > 0 ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${fotkyIds.map((id,i)=>`<a href="${driveUrl(id)}" target="_blank" class="file-link file-link-green">📷 Soubor ${i+1}</a>`).join('')}</div>` : ''}
+        <div style="font-size:12px;color:var(--text3)">Datum dokončení: ${req.datumDokonceni||'—'}</div>
+    `;
+    document.getElementById('returnReasonGroup').style.display = 'none';
+    document.getElementById('returnReason').value = '';
+    document.getElementById('approveBtn').style.display = '';
+    document.getElementById('returnBtn').textContent = '✕ Vrátit k opravě';
+    document.getElementById('reviewBackdrop').classList.add('open');
+    document.getElementById('reviewSheet').classList.add('open');
 };
 
-// ── TERMIN ──────────────────────────────────────────────────────
-window.openTerminModal = function(requestId, datum, cas) {
-    state.terminModal = { open:true, requestId };
-    document.getElementById('terminModal').classList.add('open');
-    document.getElementById('modalDatum').value = datum || '';
-    document.getElementById('modalCas').value = cas || '';
+window.closeReviewSheet = function() {
+    document.getElementById('reviewBackdrop').classList.remove('open');
+    document.getElementById('reviewSheet').classList.remove('open');
 };
-window.closeTerminModal = function() { document.getElementById('terminModal').classList.remove('open'); };
-window.confirmTermin = async function() {
-    const datum = document.getElementById('modalDatum').value;
-    const cas   = document.getElementById('modalCas').value;
-    if (!datum || !cas) { alert('❌ Vyplňte datum i čas'); return; }
-    const { requestId } = state.terminModal;
-    const req = state.requests.find(r => r.id == requestId);
+
+window.showReturnForm = function() {
+    if (returnMode) { window.returnTask(); return; }
+    returnMode = true;
+    document.getElementById('returnReasonGroup').style.display = 'block';
+    document.getElementById('returnBtn').textContent = '↩ Potvrdit vrácení';
+    document.getElementById('approveBtn').style.display = 'none';
+};
+
+window.approveTask = async function() {
+    const req = state.requests.find(r => r.id == reviewReqId);
     if (!req) return;
     try {
-        const params = new URLSearchParams({ action:'update', id:requestId, schvaleneDatum:datum, schvalenyCas:cas, terminPotvrzen:'Ano' });
-        await fetch(`${API_URL}?${params}`);
-        const bylUpraven = datum !== req.pozadovaneDatum || cas !== req.pozadovanyCas;
-        await emailjs.send(EMAIL_CONFIG.serviceId, 'template_termin_schvalen', {
-            to_email:req.email, to_name:req.jmeno, objekt_cislo:req.objektCislo,
-            pozadovane_datum:req.pozadovaneDatum, pozadovany_cas:req.pozadovanyCas,
-            schvalene_datum:datum, schvaleny_cas:cas,
-            byl_upraven: bylUpraven?'Ano':'Ne',
-            status_text: bylUpraven?'✏️ Termín upraven':'✓ Termín potvrzen',
-            akce_text: bylUpraven?'upravil':'potvrdil', poznamka:req.poznamka
-        });
-        alert('✅ Termín potvrzen');
-        document.getElementById('terminModal').classList.remove('open');
-        await loadRequests();
+        await apiCall({ action:'update', id:reviewReqId, stav:'Dokončeno' });
+        req.stav = 'Dokončeno';
+        closeReviewSheet();
+        render();
+        if (isOnline) await loadData();
+    } catch(e) { alert('❌ Chyba při schvalování'); }
+};
+
+window.returnTask = async function() {
+    const reason = document.getElementById('returnReason').value.trim();
+    if (!reason) { alert('❌ Zadejte důvod vrácení'); return; }
+    const req = state.requests.find(r => r.id == reviewReqId);
+    if (!req) return;
+    try {
+        await apiCall({ action:'update', id:reviewReqId, stav:'Vráceno', poznamkaHlavni: reason });
+        req.stav = 'Vráceno'; req.poznamkaHlavni = reason;
+        closeReviewSheet();
+        render();
+        if (isOnline) await loadData();
+    } catch(e) { alert('❌ Chyba při vrácení'); }
+};
+
+// ── TERMIN ────────────────────────────────────────────────────────
+let terminReqId = null;
+
+window.openTerminSheet = function(reqId, datum, cas) {
+    terminReqId = reqId;
+    document.getElementById('tsDatum').value = datum || '';
+    document.getElementById('tsCas').value = cas || '';
+    document.getElementById('terminBackdrop').classList.add('open');
+    document.getElementById('terminSheet').classList.add('open');
+};
+
+window.closeTerminSheet = function() {
+    document.getElementById('terminBackdrop').classList.remove('open');
+    document.getElementById('terminSheet').classList.remove('open');
+};
+
+window.confirmTermin = async function() {
+    const datum = document.getElementById('tsDatum').value;
+    const cas   = document.getElementById('tsCas').value;
+    if (!datum || !cas) { alert('❌ Vyplňte datum i čas'); return; }
+    const req = state.requests.find(r => r.id == terminReqId);
+    if (!req) return;
+    try {
+        await apiCall({ action:'update', id:terminReqId, schvaleneDatum:datum, schvalenyCas:cas, terminPotvrzen:'Ano' });
+        req.schvaleneDatum = datum; req.schvalenyCas = cas; req.terminPotvrzen = 'Ano';
+        if (isOnline) {
+            await emailjs.send(EMAIL_CFG.serviceId, 'template_termin_schvalen', {
+                to_email:req.email, to_name:req.jmeno, objekt_cislo:req.objektCislo,
+                pozadovane_datum:req.pozadovaneDatum, pozadovany_cas:req.pozadovanyCas,
+                schvalene_datum:datum, schvaleny_cas:cas,
+                byl_upraven: datum!==req.pozadovaneDatum||cas!==req.pozadovanyCas ? 'Ano':'Ne',
+                status_text:'✓ Termín potvrzen', akce_text:'potvrdil', poznamka:req.poznamka
+            }).catch(e => console.error(e));
+        }
+        closeTerminSheet();
+        render();
+        if (isOnline) await loadData();
     } catch(e) { alert('❌ Chyba při potvrzování termínu'); }
 };
 
-// ── BCF EXPORT ────────────────────────────────────────────────────
-function extractBcfId(poznamka) {
-    const m = poznamka?.match(/\[BCF:\s*([^\]]+)\]/);
-    return m ? m[1].trim() : null;
-}
-function extractTrimble(poznamka) {
-    const m = poznamka?.match(/\[TC:\s*([^\]]+)\]/);
-    return m ? m[1].trim() : null;
-}
-function extractPresnost(poznamka) {
-    const m = poznamka?.match(/\[Přesnost:\s*±?(\d+)mm\]/);
-    return m ? parseInt(m[1]) : null;
-
-}
-function extractSekce(poznamka) {
-    const m = poznamka?.match(/\[Sekce:\s*([^\]]+)\]/);
-    return m ? m[1].trim() : null;
-}
-
-let bcfContent = '';
-
-window.openBcfModal = function() {
-    const critReqs = state.requests.filter(r => getDevStatus(r) === 'crit' || getDevStatus(r) === 'warn');
-    if (critReqs.length === 0) { alert('ℹ️ Žádné odchylky mimo toleranci k exportu'); return; }
-
-    const now = new Date().toISOString();
-    const issues = critReqs.map((req, i) => {
-        const bcfId = extractBcfId(req.poznamka) || `AUTO-${i+1}`;
-        const odchylka = req.skutecnaOdchylka ? `${req.skutecnaOdchylka}mm` : 'N/A';
-        const presnost = extractPresnost(req.poznamka);
-        const status = getDevStatus(req) === 'crit' ? 'CRITICAL' : 'WARNING';
-        return `  <Topic Guid="${crypto.randomUUID()}" TopicType="Issue" TopicStatus="${status}">
-    <Title>[${bcfId}] ${req.objektCislo} — odchylka ${odchylka}</Title>
-    <CreationDate>${now}</CreationDate>
-    <CreationAuthor>${state.currentUser?.email || 'bim@strabag.com'}</CreationAuthor>
-    <Description>${req.poznamka?.replace(/\[[^\]]+\]/g,'').trim() || ''}&#10;Zaměřil: ${req.pridelenyGeodet || 'N/A'}&#10;Odchylka: ${odchylka}${presnost ? ` / Tolerance: ±${presnost}mm` : ''}</Description>
-    <AssignedTo>${req.pridelenyGeodet || ''}</AssignedTo>
-    <DueDate>${req.datumDokonceni || ''}</DueDate>
-  </Topic>`;
-    }).join('\n');
-
-    bcfContent = `<?xml version="1.0" encoding="UTF-8"?>\n<BIM360 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n<Version VersionId="2.1">\n  <DetailedVersion>2.1</DetailedVersion>\n</Version>\n${issues}\n</BIM360>`;
-    document.getElementById('bcfPreview').textContent = bcfContent;
-    document.getElementById('bcfModal').classList.add('open');
-};
-window.closeBcfModal = function() { document.getElementById('bcfModal').classList.remove('open'); };
-window.downloadBcf = function() {
-    const blob = new Blob([bcfContent], { type: 'application/xml' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `odchylky_${new Date().toLocaleDateString('cs-CZ').replace(/\./g,'-')}.bcf`;
-    a.click();
+// ── INLINE TOGGLES ────────────────────────────────────────────────
+window.toggleExpand = function(id, type) {
+    const el = document.getElementById(`expand-${type}-${id}`);
+    if (el) el.classList.toggle('open');
 };
 
-// ── EXPORT XLSX ────────────────────────────────────────────────────
-window.exportExcel = function() {
-    const data = state.requests.map(req => ({
-        'Objekt': req.objektCislo,
-        'Sekce': extractSekce(req.poznamka) || '-',
-        'Typ zaměření': req.typZamereni || '-',
-        'BCF Issue': extractBcfId(req.poznamka) || '-',
-        'Stav': req.stav,
-        'Tolerance ±mm': extractPresnost(req.poznamka) || '-',
-        'Skutečná odchylka mm': req.skutecnaOdchylka || '-',
-        'Status odchylky': (() => { const s=computeTolStatus(req); return s?{'ok':'V toleranci','warn':'Mimo toleranci','crit':'Kritická odchylka'}[s]:'-'; })(),
-        'Přiřazený geodet': req.pridelenyGeodet || '-',
-        'Datum zaměření': req.datumDokonceni || '-',
-        'Zadal': req.jmeno,
-        'Datum požadavku': req.datumPozadavku,
-        'Trimble Connect': extractTrimble(req.poznamka) || '-',
-        'Poznámka': (req.poznamka||'').replace(/\[[^\]]+\]/g,'').trim()
-    }));
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'BIM Zaměření');
-    XLSX.writeFile(wb, `BIM_zaměření_${new Date().toLocaleDateString('cs-CZ').replace(/\./g,'-')}.xlsx`);
+// ── NEW TASK ─────────────────────────────────────────────────────
+window.openNewTask = function() {
+    // Populate geodet select
+    const sel = document.getElementById('ntGeodet');
+    sel.innerHTML = `<option value="">— přiřadit —</option>` + geodeti.map(g=>`<option value="${g}">${g}</option>`).join('');
+    document.getElementById('ntObjekt').value = '';
+    document.getElementById('ntTyp').value = '';
+    document.getElementById('ntPoznamka').value = '';
+    document.getElementById('ntDatum').value = '';
+    document.getElementById('newTaskBackdrop').classList.add('open');
+    document.getElementById('newTaskSheet').classList.add('open');
+    setTimeout(() => document.getElementById('ntObjekt').focus(), 350);
+};
+window.closeNewTask = function() {
+    document.getElementById('newTaskBackdrop').classList.remove('open');
+    document.getElementById('newTaskSheet').classList.remove('open');
+};
+window.submitNewTask = async function() {
+    const objekt  = document.getElementById('ntObjekt').value.trim();
+    const typ     = document.getElementById('ntTyp').value;
+    const geodet  = document.getElementById('ntGeodet').value;
+    const datum   = document.getElementById('ntDatum').value;
+    const pozn    = document.getElementById('ntPoznamka').value.trim();
+    if (!objekt) { alert('❌ Zadejte číslo objektu'); return; }
+    const user = state.currentUser;
+    const dnes = new Date().toLocaleDateString('cs-CZ');
+    const poznamkaFull = [pozn, typ?`[Typ: ${typ}]`:''].filter(Boolean).join(' ');
+    try {
+        await apiCall({
+            action:'add', objektCislo:objekt,
+            jmeno: user.displayName||user.email, email:user.email,
+            poznamka: poznamkaFull, typZamereni:typ,
+            datumPozadavku:dnes, pozadovaneDatum:datum,
+            stav: geodet ? 'Přiřazeno' : 'Nový',
+            pridelenyGeodet: geodet || ''
+        });
+        if (geodet && isOnline) {
+            const email = geodetEmails[geodet];
+            if (email) {
+                await emailjs.send(EMAIL_CFG.serviceId, EMAIL_CFG.templateId, {
+                    to_email:email, to_name:geodet, objekt_cislo:objekt,
+                    poznamka:poznamkaFull, zadal_jmeno:user.displayName||user.email,
+                    zadal_email:user.email, datum_pozadavku:dnes,
+                    app_url:'https://geodetmasna.github.io/geodet-app/', ma_prilohu:'Ne'
+                }).catch(e => {});
+            }
+        }
+        closeNewTask();
+        if (isOnline) await loadData();
+        else { state.requests = loadCache(); render(); }
+    } catch(e) { alert('❌ Chyba při vytváření úkolu'); }
 };
 
 // ── AUTH ──────────────────────────────────────────────────────────
@@ -826,6 +974,7 @@ window.signInWithGoogle = async function() {
     } catch(e) { state.loginError = 'Chyba: ' + e.message; render(); }
 };
 window.signOut = async function() {
+    if (!confirm('Odhlásit se?')) return;
     try { await firebaseSignOut(auth); state.requests = []; } catch(e) {}
 };
 
@@ -833,521 +982,356 @@ onAuthStateChanged(auth, (user) => {
     state.isLoading = false;
     if (user) {
         const ok = ALLOWED_EMAILS.some(e => user.email.toLowerCase().includes(e.toLowerCase()));
-        if (ok) {
-            state.isAuthenticated = true;
-            state.currentUser = user;
-            state.loginError = null;
-            loadRequests();
-        } else {
-            state.isAuthenticated = false;
-            state.currentUser = null;
-            state.loginError = 'Nemáte oprávnění.';
-            firebaseSignOut(auth);
-        }
-    } else {
-        state.isAuthenticated = false;
-        state.currentUser = null;
-    }
+        if (ok) { state.isAuth=true; state.currentUser=user; state.loginError=null; loadData(); }
+        else { state.isAuth=false; state.currentUser=null; state.loginError='Nemáte oprávnění.'; firebaseSignOut(auth); }
+    } else { state.isAuth=false; state.currentUser=null; }
     render();
 });
 
-// ── NAV ───────────────────────────────────────────────────────────
-window.setView = function(v) { state.view = v; state.filterTol = 'all'; render(); };
-window.setFilter = function(f) { state.filterTol = f; render(); };
+// ── VIEW SETTERS ──────────────────────────────────────────────────
+window.setView = function(v) { state.view=v; state.filter='all'; render(); };
+window.setFilter = function(f) { state.filter=f; render(); };
+window.refreshData = loadData;
 
-// ── CHARTS ───────────────────────────────────────────────────────
-function renderCharts() {
+// ── RENDER VIEWS ──────────────────────────────────────────────────
+
+// HOME ─
+function renderHome() {
     const reqs = state.requests;
+    const novy       = reqs.filter(r => r.stav === 'Nový').length;
+    const prirazeno  = reqs.filter(r => r.stav === 'Přiřazeno').length;
+    const review     = reqs.filter(r => r.stav === 'Čeká na kontrolu').length;
+    const dokonceno  = reqs.filter(r => r.stav === 'Dokončeno').length;
+    const vraceno    = reqs.filter(r => r.stav === 'Vráceno').length;
+    const total      = reqs.length;
 
-    // Donut — stav odchylek
-    const ctxD = document.getElementById('chartDonut');
-    if (ctxD) {
-        if (chartDonut) chartDonut.destroy();
-        const ok   = reqs.filter(r => getDevStatus(r) === 'ok').length;
-        const warn = reqs.filter(r => getDevStatus(r) === 'warn').length;
-        const crit = reqs.filter(r => getDevStatus(r) === 'crit').length;
-        const proc = reqs.filter(r => getDevStatus(r) === 'proc').length;
-        const nw   = reqs.filter(r => getDevStatus(r) === 'new').length;
-        chartDonut = new Chart(ctxD, {
-            type: 'doughnut',
-            data: {
-                labels: ['V toleranci','Mimo toleranci','Kritická','Zaměřuje se','Nové'],
-                datasets: [{
-                    data: [ok, warn, crit, proc, nw],
-                    backgroundColor: ['#22c55e','#f59e0b','#ef4444','#0ea5e9','#a855f7'],
-                    borderWidth: 0, hoverOffset: 5
-                }]
-            },
-            options: {
-                cutout: '72%',
-                plugins: {
-                    legend: { position:'bottom', labels:{ color:'#8b949e', font:{family:'Barlow',size:11}, padding:12, usePointStyle:true, pointStyleWidth:7 } }
-                }
+    // Team board
+    const activeGeodeti = geodeti.filter(g => reqs.some(r => r.pridelenyGeodet === g));
+    const freeGeodeti = geodeti.filter(g => !reqs.some(r => r.pridelenyGeodet === g && (r.stav==='Přiřazeno'||r.stav==='Čeká na kontrolu')));
+
+    const teamBoard = activeGeodeti.map(g => {
+        const gReqs = reqs.filter(r => r.pridelenyGeodet === g && r.stav !== 'Dokončeno');
+        const done  = reqs.filter(r => r.pridelenyGeodet === g && r.stav === 'Dokončeno').length;
+        return `
+        <div class="geodet-col">
+            <div class="geodet-col-header">
+                <div class="geodet-avatar" style="background:${geodetColor(g)}">${initials(g)}</div>
+                <div>
+                    <div class="geodet-col-name">${g.split(' ')[0]}</div>
+                    <div class="geodet-col-count">${gReqs.length} aktiv · ${done} hotovo</div>
+                </div>
+            </div>
+            ${gReqs.length === 0 ? `<div class="geodet-col-empty">Volný</div>` :
+              gReqs.slice(0,4).map(r => `
+                <div class="geodet-mini-task ${getMiniClass(r.stav)}" onclick="setView('tasks');setFilter('all')">
+                    <div class="gmt-obj">${r.objektCislo}</div>
+                    <div class="gmt-status">${r.stav}</div>
+                </div>
+              `).join('') + (gReqs.length > 4 ? `<div class="geodet-col-empty">+${gReqs.length-4} dalších</div>` : '')
             }
-        });
-    }
+        </div>`;
+    }).join('');
 
-    // Bar — odchylky vs. tolerance
-    const ctxB = document.getElementById('chartDev');
-    if (ctxB) {
-        if (chartDeviation) chartDeviation.destroy();
-        const completed = reqs.filter(r => r.skutecnaOdchylka && r.poznamka?.includes('[Přesnost:'));
-        const labels = completed.map(r => r.objektCislo);
-        const dOdchylka = completed.map(r => parseFloat(r.skutecnaOdchylka));
-        const dTolerance = completed.map(r => extractPresnost(r.poznamka));
-        const barColors = completed.map(r => {
-            const s = computeTolStatus(r);
-            return s==='ok' ? '#22c55e' : s==='warn' ? '#f59e0b' : '#ef4444';
-        });
+    const freeCols = freeGeodeti.slice(0,3).map(g => `
+        <div class="geodet-col geodet-col-free">
+            <div class="geodet-col-header">
+                <div class="geodet-avatar" style="background:var(--green)">${initials(g)}</div>
+                <div>
+                    <div class="geodet-col-name">${g.split(' ')[0]}</div>
+                    <div class="geodet-col-count">volný kapacita</div>
+                </div>
+            </div>
+            <div class="geodet-col-empty">✓ Bez přiřazených úkolů</div>
+        </div>`).join('');
 
-        chartDeviation = new Chart(ctxB, {
-            type: 'bar',
-            data: {
-                labels: labels.length ? labels : ['—'],
-                datasets: [
-                    {
-                        label: 'Skutečná odchylka (mm)',
-                        data: dOdchylka.length ? dOdchylka : [0],
-                        backgroundColor: barColors,
-                        borderRadius: 5, borderSkipped: false
-                    },
-                    {
-                        label: 'Tolerance (mm)',
-                        data: dTolerance.length ? dTolerance : [0],
-                        type: 'line',
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'transparent',
-                        borderWidth: 1.5,
-                        borderDash: [4,3],
-                        pointRadius: 3,
-                        pointBackgroundColor: '#0ea5e9',
-                        order: 0
-                    }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{family:'Space Mono',size:10}} },
-                    y: { beginAtZero:true, grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{family:'Space Mono',size:11}}, title:{display:true,text:'mm',color:'#484f58',font:{family:'Space Mono',size:10}} }
-                },
-                plugins: {
-                    legend:{ labels:{color:'#8b949e',font:{family:'Barlow',size:11},usePointStyle:true,pointStyleWidth:7} }
-                }
-            }
-        });
-    }
+    const pendingSync = JSON.parse(localStorage.getItem('geodet_pending')||'[]').length;
+
+    return `
+    <div class="stats-row">
+        <div class="stat-tile t-blue" onclick="setView('tasks');setFilter('new')">
+            <div class="stat-num">${novy}</div>
+            <div class="stat-lbl">Nové požadavky</div>
+        </div>
+        <div class="stat-tile t-orange" onclick="setView('tasks');setFilter('assigned')">
+            <div class="stat-num">${prirazeno}</div>
+            <div class="stat-lbl">V terénu</div>
+        </div>
+        <div class="stat-tile t-purple" onclick="setView('tasks');setFilter('review')">
+            <div class="stat-num">${review}</div>
+            <div class="stat-lbl">Ke kontrole</div>
+        </div>
+        <div class="stat-tile t-green" onclick="setView('tasks');setFilter('done')">
+            <div class="stat-num">${dokonceno}</div>
+            <div class="stat-lbl">Dokončeno</div>
+        </div>
+    </div>
+
+    ${review > 0 ? `
+    <div class="review-banner" onclick="setView('tasks');setFilter('review')">
+        <div class="review-banner-icon">◈</div>
+        <div>
+            <div class="review-banner-count">${review}</div>
+            <div class="review-banner-text">úkol${review>1?'ů':''} čeká na vaši kontrolu</div>
+        </div>
+        <div class="review-banner-arrow">›</div>
+    </div>` : ''}
+
+    ${pendingSync > 0 ? `
+    <div style="background:var(--amber-lt);border:1.5px solid var(--orange-mid);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--amber)">
+        ⚡ ${pendingSync} změna${pendingSync>1?'y':''} čeká na synchronizaci
+    </div>` : ''}
+
+    <div class="sec-hdr">
+        <div class="sec-title">Tým dnes</div>
+        <button class="sec-link" onclick="setView('tasks')">Zobrazit vše</button>
+    </div>
+    <div class="team-board">
+        ${teamBoard || '<div style="color:var(--text3);font-size:13px;padding:8px 0">Žádné aktivní přiřazení</div>'}
+        ${freeCols}
+    </div>
+
+    ${novy > 0 ? `
+    <div class="sec-hdr" style="margin-top:20px">
+        <div class="sec-title">Nové požadavky (${novy})</div>
+    </div>
+    ${reqs.filter(r=>r.stav==='Nový').slice(0,3).map(r => renderTaskCard(r)).join('')}
+    ${novy > 3 ? `<button style="width:100%;padding:12px;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);font-family:var(--font-h);font-size:14px;font-weight:700;color:var(--orange);cursor:pointer" onclick="setView('tasks');setFilter('new')">Zobrazit všech ${novy} nových →</button>` : ''}
+    ` : ''}
+    `;
 }
 
-// ── COVERAGE BARS ─────────────────────────────────────────────────
-function renderCoverageSection() {
-    const reqs = state.requests;
-    const sections = {};
-    reqs.forEach(r => {
-        const sekce = extractSekce(r.poznamka) || 'Neurčeno';
-        if (!sections[sekce]) sections[sekce] = { total:0, done:0 };
-        sections[sekce].total++;
-        if (r.stav === 'Dokončeno') sections[sekce].done++;
-    });
+// TASK CARD ─
+function renderTaskCard(req) {
+    const fotkyIds = parseFileIds(req.fotkaFileId);
+    const isReview   = req.stav === 'Čeká na kontrolu';
+    const isReturned = req.stav === 'Vráceno';
 
-    if (Object.keys(sections).length === 0) return '<p style="color:var(--text3);font-size:13px">Žádná data</p>';
-
-    return Object.entries(sections).sort((a,b) => b[1].total - a[1].total).map(([name, d]) => {
-        const pct = d.total > 0 ? Math.round((d.done/d.total)*100) : 0;
-        const col = pct >= 75 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444';
-        return `
-        <div class="cov-row">
-            <span class="cov-label">${name.replace('SO-0','SO-').substring(0,12)}</span>
-            <div class="cov-track">
-                <div class="cov-fill" style="width:${pct}%;background:${col}"></div>
+    return `
+    <div class="task-card ${isReview?'needs-review':''} ${isReturned?'returned':''}">
+        <div class="task-card-head">
+            <div class="task-status-bar ${getBarClass(req.stav)}"></div>
+            <div class="task-main">
+                <div class="task-obj">${req.objektCislo}</div>
+                <div class="task-meta">${req.jmeno}${req.pridelenyGeodet ? ' · <strong>'+req.pridelenyGeodet+'</strong>' : ''}</div>
+                <div class="task-chips">
+                    ${getChipHtml(req.stav)}
+                    ${req.typZamereni ? `<span class="chip chip-gray">${req.typZamereni}</span>` : ''}
+                </div>
+                <div class="task-date">${req.datumPozadavku}</div>
             </div>
-            <span class="cov-pct" style="color:${col}">${pct}%</span>
-            <span class="cov-count">${d.done}/${d.total}</span>
+        </div>
+
+        ${req.poznamka ? `<div style="padding:0 14px 10px;font-size:13px;color:var(--text2);line-height:1.5">${req.poznamka.substring(0,120)}${req.poznamka.length>120?'…':''}</div>` : ''}
+
+        ${isReturned && req.poznamkaHlavni ? `
+        <div class="return-reason">↩ Vráceno: ${req.poznamkaHlavni}</div>` : ''}
+
+        ${req.pozadovaneDatum && req.pozadovanyCas ? `
+        <div class="termin-strip ${req.terminPotvrzen==='Ano' ? 'termin-confirmed':'termin-pending'}">
+            📅 ${req.terminPotvrzen==='Ano' ?
+                `Termín potvrzen: ${req.schvaleneDatum||req.pozadovaneDatum} v ${req.schvalenyCas||req.pozadovanyCas}` :
+                `Požadovaný termín: ${req.pozadovaneDatum} v ${req.pozadovanyCas}`
+            }
+        </div>` : ''}
+
+        ${(fotkyIds.length > 0 || req.prilohaFileId) ? `
+        <div class="file-links">
+            ${req.prilohaFileId ? `<a href="${driveUrl(req.prilohaFileId)}" target="_blank" class="file-link file-link-blue">🔎 Příloha</a>` : ''}
+            ${fotkyIds.map((id,i)=>`<a href="${driveUrl(id)}" target="_blank" class="file-link file-link-green">📷 Soubor ${i+1}</a>`).join('')}
+        </div>` : ''}
+
+        <div class="task-actions">
+            ${req.stav === 'Nový' ? `
+                <button class="tact tact-primary" onclick="toggleExpand('${req.id}','assign')">👷 Přiřadit</button>
+                ${req.pozadovaneDatum && req.terminPotvrzen !== 'Ano' ? `<button class="tact tact-blue" onclick="openTerminSheet('${req.id}','${req.pozadovaneDatum}','${req.pozadovanyCas}')">📅 Termín</button>` : ''}
+            ` : ''}
+            ${req.stav === 'Přiřazeno' ? `
+                <button class="tact tact-ghost" onclick="toggleExpand('${req.id}','reassign')">🔄 Přeřadit</button>
+                ${req.pozadovaneDatum && req.terminPotvrzen !== 'Ano' ? `<button class="tact tact-blue" onclick="openTerminSheet('${req.id}','${req.pozadovaneDatum}','${req.pozadovanyCas}')">📅 Termín</button>` : ''}
+            ` : ''}
+            ${req.stav === 'Čeká na kontrolu' ? `
+                <button class="tact tact-purple" onclick="openReviewSheet('${req.id}')">◈ Zkontrolovat výsledek</button>
+            ` : ''}
+            ${req.stav === 'Vráceno' ? `
+                <button class="tact tact-primary" onclick="toggleExpand('${req.id}','reassign')">🔄 Přeřadit znovu</button>
+            ` : ''}
+            ${req.stav === 'Dokončeno' ? `
+                <span style="font-size:13px;color:var(--green);font-weight:600;padding:8px 4px">✓ Zkontrolováno a schváleno</span>
+            ` : ''}
+        </div>
+
+        <!-- ASSIGN EXPAND -->
+        <div id="expand-assign-${req.id}" class="expand-panel">
+            <div class="expand-body">
+                <div class="exp-label">Vyberte geodeta</div>
+                <select class="exp-select" onchange="assignGeodet('${req.id}',this.value)">
+                    <option value="">— Vyberte geodeta —</option>
+                    ${geodeti.map(g=>`<option value="${g}">${g}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+
+        <!-- REASSIGN EXPAND -->
+        <div id="expand-reassign-${req.id}" class="expand-panel">
+            <div class="expand-body">
+                <div class="exp-label" style="color:var(--orange)">⚠ Přeřadit na náhradníka</div>
+                <select class="exp-select" onchange="reassignGeodet('${req.id}',this.value)" style="border-color:var(--orange-mid)">
+                    <option value="">— Vyberte náhradníka —</option>
+                    ${geodeti.filter(g=>g!==req.pridelenyGeodet).map(g=>`<option value="${g}">${g}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+    </div>`;
+}
+
+// TASKS VIEW ─
+function renderTasks() {
+    const reqs = state.requests;
+    const counts = {
+        all: reqs.length,
+        new: reqs.filter(r=>r.stav==='Nový').length,
+        assigned: reqs.filter(r=>r.stav==='Přiřazeno').length,
+        review: reqs.filter(r=>r.stav==='Čeká na kontrolu').length,
+        done: reqs.filter(r=>r.stav==='Dokončeno').length,
+        returned: reqs.filter(r=>r.stav==='Vráceno').length,
+    };
+    const filtered = filteredRequests();
+
+    const tabs = [
+        ['all','f-all','Vše',counts.all],
+        ['new','f-new','Nové',counts.new],
+        ['assigned','f-assigned','V terénu',counts.assigned],
+        ['review','f-review','Ke kontrole',counts.review],
+        ['done','f-done','Hotovo',counts.done],
+        ['returned','f-returned','Vráceno',counts.returned],
+    ];
+
+    return `
+    <div class="filter-bar">
+        ${tabs.map(([f,cls,label,count]) => `
+            <button class="ftab ${cls} ${state.filter===f?'active':''}" onclick="setFilter('${f}')">
+                ${label} ${count > 0 ? `(${count})` : ''}
+            </button>`).join('')}
+    </div>
+    ${filtered.length === 0 ?
+        `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Žádné záznamy</div><div class="empty-sub">Zkuste jiný filtr</div></div>` :
+        filtered.map(req => renderTaskCard(req)).join('')
+    }`;
+}
+
+// TEAM VIEW ─
+function renderTeam() {
+    const reqs = state.requests;
+    return geodeti.map(g => {
+        const assigned = reqs.filter(r=>r.pridelenyGeodet===g && r.stav==='Přiřazeno').length;
+        const review   = reqs.filter(r=>r.pridelenyGeodet===g && r.stav==='Čeká na kontrolu').length;
+        const done     = reqs.filter(r=>r.pridelenyGeodet===g && r.stav==='Dokončeno').length;
+        const returned = reqs.filter(r=>r.pridelenyGeodet===g && r.stav==='Vráceno').length;
+        const total    = assigned + review + done + returned;
+        const isFree = assigned + review === 0;
+        return `
+        <div class="task-card" style="${isFree?'opacity:.7':''}">
+            <div class="task-card-head">
+                <div class="geodet-avatar" style="background:${geodetColor(g)};width:44px;height:44px;border-radius:12px;font-size:16px">${initials(g)}</div>
+                <div class="task-main" style="margin-left:10px">
+                    <div class="task-obj" style="font-size:17px">${g}</div>
+                    <div class="task-chips" style="margin-top:6px">
+                        ${assigned > 0 ? `<span class="chip chip-assigned">◎ ${assigned} v terénu</span>` : ''}
+                        ${review > 0   ? `<span class="chip chip-review">◈ ${review} ke kontrole</span>` : ''}
+                        ${done > 0     ? `<span class="chip chip-done">✓ ${done} hotovo</span>` : ''}
+                        ${returned > 0 ? `<span class="chip chip-returned">↩ ${returned} vráceno</span>` : ''}
+                        ${total === 0  ? `<span class="chip chip-gray">Volný</span>` : ''}
+                    </div>
+                </div>
+            </div>
+            ${total > 0 ? `
+            <div class="task-actions">
+                <button class="tact tact-ghost" onclick="setView('tasks');setFilter('all')">Zobrazit úkoly →</button>
+            </div>` : ''}
         </div>`;
     }).join('');
 }
 
-// ── RENDER REQUEST CARD ───────────────────────────────────────────
-function renderCard(req) {
-    const s = getDevStatus(req);
-    const odchylka = req.skutecnaOdchylka ? parseFloat(req.skutecnaOdchylka) : null;
-    const presnost = extractPresnost(req.poznamka);
-    const bcfId = extractBcfId(req.poznamka);
-    const trimble = extractTrimble(req.poznamka);
-    const sekce = extractSekce(req.poznamka);
-    const cleanNote = (req.poznamka||'').replace(/\[[^\]]+\]/g,'').trim();
-    const fotkyIds = parseFileIds(req.fotkaFileId);
-
-    const iconMap = { crit:'⚠', warn:'△', ok:'✓', proc:'◎', new:'◈' };
-    const iconClass = { crit:'icon-crit', warn:'icon-warn', ok:'icon-ok', proc:'icon-proc', new:'icon-new' };
-
-    // Tolerance gauge
-    let gaugeHtml = '';
-    if (odchylka !== null && presnost) {
-        const maxVal = Math.max(odchylka, presnost * 2.5);
-        const fillPct = Math.min(100, (odchylka/maxVal)*100);
-        const markerPct = (presnost/maxVal)*100;
-        const fillColor = s==='ok'?'#22c55e':s==='warn'?'#f59e0b':'#ef4444';
-        gaugeHtml = `
-        <div class="tol-gauge">
-            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">0</span>
-            <div class="tol-track">
-                <div class="tol-fill" style="width:${fillPct}%;background:${fillColor}"></div>
-                <div class="tol-marker" style="left:${markerPct}%;"></div>
-            </div>
-            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${Math.round(maxVal)}mm</span>
-        </div>
-        <div class="tol-nums"><span>skutečná: ${odchylka}mm</span><span>tolerance: ±${presnost}mm</span></div>`;
-    }
-
-    return `
-    <div class="dev-card ${s}">
-        <div class="dev-status-icon ${iconClass[s]}">${iconMap[s]}</div>
-        <div class="dev-main">
-            <div class="dev-obj">${req.objektCislo}</div>
-            <div class="dev-meta">${req.datumPozadavku} · ${req.jmeno}${sekce ? ` · ${sekce}` : ''}</div>
-            <div class="dev-tags">
-                ${statusTag(req)}
-                ${req.typZamereni ? `<span class="tag tag-type">${req.typZamereni}</span>` : ''}
-                ${bcfId ? `<a href="#" class="dev-bcf-link" onclick="return false">BCF ${bcfId}</a>` : ''}
-                ${trimble ? `<a href="${trimble}" target="_blank" class="dev-bcf-link">⊞ Trimble Connect</a>` : ''}
-            </div>
-            ${cleanNote ? `<div class="dev-note">${cleanNote}</div>` : ''}
-            ${gaugeHtml}
-
-            ${req.stav === 'Nový' ? `
-            <div class="assign-row">
-                <span class="assign-label">Přiřadit geodeta:</span>
-                <select class="assign-select" onchange="assignGeodet('${req.id}',this.value)">
-                    <option value="">— Vyberte —</option>
-                    ${geodeti.map(g=>`<option value="${g}">${g}</option>`).join('')}
-                </select>
-            </div>` : ''}
-
-            ${req.stav === 'Přiřazeno' ? `
-            <div class="assign-row">
-                <span class="assign-label">Geodet:</span>
-                <span style="font-weight:600;color:var(--teal);font-size:13px">${req.pridelenyGeodet}</span>
-                <button onclick="toggleReassign('${req.id}')" class="btn btn-amber btn-sm" style="margin-left:auto">🔄 Přeřadit</button>
-            </div>
-            <div id="rp-${req.id}" class="reassign-panel">
-                <div class="reassign-warn">⚠ Geodet nemůže přijet — vyberte náhradníka:</div>
-                <select class="reassign-select" onchange="reassignGeodet('${req.id}',this.value)">
-                    <option value="">— Náhradník —</option>
-                    ${geodeti.filter(g=>g!==req.pridelenyGeodet).map(g=>`<option value="${g}">${g}</option>`).join('')}
-                </select>
-            </div>` : ''}
-
-            ${req.pozadovaneDatum && req.pozadovanyCas && req.terminPotvrzen !== 'Ano' && req.stav === 'Nový' ? `
-            <div style="margin-top:10px">
-                <button onclick="openTerminModal('${req.id}','${req.pozadovaneDatum}','${req.pozadovanyCas}')" class="btn btn-ghost btn-sm">📅 Potvrdit termín ${req.pozadovaneDatum}</button>
-            </div>` : ''}
-
-            ${req.stav === 'Dokončeno' ? `
-            <div style="margin-top:10px;padding:12px 14px;background:var(--surface);border-radius:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-family:var(--font-mono)">
-                <span style="color:var(--text2)">Geodet: <strong style="color:var(--text)">${req.pridelenyGeodet||'-'}</strong></span>
-                <span style="color:var(--text2)">Datum: <strong style="color:var(--text)">${req.datumDokonceni||'-'}</strong></span>
-                ${req.poznamkaGeodeta ? `<span style="color:var(--text2)">Pozn.: <strong style="color:var(--text)">${req.poznamkaGeodeta}</strong></span>` : ''}
-                ${fotkyIds.map((id,i)=>`<a href="${driveUrl(id)}" target="_blank" style="color:var(--teal)">📷 Soubor ${i+1}</a>`).join('')}
-            </div>` : ''}
-        </div>
-        <div class="dev-right">
-            ${odchylka !== null ? `
-            <div class="dev-tolerance-block">
-                <div class="dev-tol-label">Odchylka</div>
-                <div class="dev-tol-val" style="color:${s==='ok'?'#22c55e':s==='warn'?'#f59e0b':'#ef4444'}">${odchylka}<span style="font-size:14px">mm</span></div>
-                ${presnost ? `<div class="dev-tol-req">tol. ±${presnost}mm</div>` : ''}
-            </div>` : presnost ? `
-            <div class="dev-tolerance-block">
-                <div class="dev-tol-label">Tolerance</div>
-                <div class="dev-tol-val" style="color:var(--text3);font-size:18px">±${presnost}<span style="font-size:12px">mm</span></div>
-            </div>` : ''}
-            <div class="dev-actions">
-                ${req.prilohaFileId ? `<a href="${driveUrl(req.prilohaFileId)}" target="_blank" class="btn btn-ghost btn-sm">🔎 Příloha</a>` : ''}
-            </div>
-        </div>
-    </div>`;
-}
-
-// ── DASHBOARD VIEW ────────────────────────────────────────────────
-function renderDashboard() {
-    const reqs = state.requests;
-    const total  = reqs.length;
-    const nw     = reqs.filter(r=>getDevStatus(r)==='new').length;
-    const proc   = reqs.filter(r=>getDevStatus(r)==='proc').length;
-    const ok     = reqs.filter(r=>getDevStatus(r)==='ok').length;
-    const warn   = reqs.filter(r=>getDevStatus(r)==='warn').length;
-    const crit   = reqs.filter(r=>getDevStatus(r)==='crit').length;
-    const done   = reqs.filter(r=>r.stav==='Dokončeno').length;
-    const coverage = total > 0 ? Math.round((done/total)*100) : 0;
-    const recent = [...reqs].sort((a,b)=>b.id-a.id).filter(r=>getDevStatus(r)==='crit'||getDevStatus(r)==='warn').slice(0,4);
-
-    return `
-    <div class="kpi-strip">
-        <div class="kpi kpi-teal" onclick="setView('requests');setFilter('all')">
-            <div class="kpi-label">Celkem požadavků</div>
-            <div class="kpi-val">${total}</div>
-            <div class="kpi-sub">model coverage ${coverage}%</div>
-        </div>
-        <div class="kpi kpi-green" onclick="setView('requests');setFilter('ok')">
-            <div class="kpi-label">V toleranci</div>
-            <div class="kpi-val">${ok}</div>
-            <div class="kpi-sub">shoda as-built</div>
-        </div>
-        <div class="kpi kpi-amber" onclick="setView('requests');setFilter('warn')">
-            <div class="kpi-label">Mimo toleranci</div>
-            <div class="kpi-val">${warn}</div>
-            <div class="kpi-sub">vyžaduje řešení</div>
-        </div>
-        <div class="kpi kpi-red" onclick="setView('requests');setFilter('crit')">
-            <div class="kpi-label">Kritické odchylky</div>
-            <div class="kpi-val">${crit}</div>
-            <div class="kpi-sub">eskalovat ihned</div>
-        </div>
-        <div class="kpi kpi-purple" onclick="setView('requests');setFilter('proc')">
-            <div class="kpi-label">V procesu</div>
-            <div class="kpi-val">${nw + proc}</div>
-            <div class="kpi-sub">${nw} nových · ${proc} přiřazeno</div>
-        </div>
-    </div>
-
-    <div class="charts-grid">
-        <div class="chart-card">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">Status odchylek</div>
-                    <div class="chart-sub">as-built vs. projekt</div>
-                </div>
-            </div>
-            <canvas id="chartDonut" style="max-height:220px"></canvas>
-        </div>
-        <div class="chart-card">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">Odchylky vs. tolerance</div>
-                    <div class="chart-sub">skutečná odchylka · přerušovaná čára = limit tolerance</div>
-                </div>
-            </div>
-            <div style="height:220px">
-                <canvas id="chartDev"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-        <div class="chart-card">
-            <div class="chart-title" style="margin-bottom:16px">Pokrytí zaměřeními dle sekce</div>
-            <div class="coverage-grid">${renderCoverageSection()}</div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title" style="margin-bottom:16px">Aktivní problémy</div>
-            ${recent.length === 0 ? '<p style="color:var(--text3);font-size:13px;font-family:var(--font-mono)">Žádné aktivní problémy ✓</p>' :
-            recent.map(req => {
-                const s = getDevStatus(req);
-                const odchylka = req.skutecnaOdchylka;
-                const presnost = extractPresnost(req.poznamka);
-                return `
-                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-                    <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${s==='crit'?'var(--red)':'var(--amber)'}"></div>
-                    <div style="flex:1;min-width:0">
-                        <div style="font-weight:600;font-size:13px;color:var(--text)">${req.objektCislo}</div>
-                        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">${req.pridelenyGeodet||req.jmeno}</div>
-                    </div>
-                    ${odchylka ? `<div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:${s==='crit'?'var(--red)':'var(--amber)'}">${odchylka}mm</div>` : ''}
-                    ${statusTag(req)}
-                </div>`;
-            }).join('')}
-        </div>
-    </div>`;
-}
-
-// ── REQUESTS VIEW ─────────────────────────────────────────────────
-function renderRequests() {
-    const filterMap = {
-        all:  r => true,
-        new:  r => getDevStatus(r) === 'new',
-        proc: r => getDevStatus(r) === 'proc',
-        ok:   r => getDevStatus(r) === 'ok',
-        warn: r => getDevStatus(r) === 'warn',
-        crit: r => getDevStatus(r) === 'crit',
-    };
-    const filtered = state.requests.filter(filterMap[state.filterTol] || filterMap.all);
-
-    const tabClass = (f) => {
-        const base = 'filter-tab';
-        if (state.filterTol !== f) return base;
-        const map = { all:'active-all', new:'active-new', proc:'active-new', ok:'active-done', warn:'active-assigned', crit:'active-crit' };
-        return `${base} ${map[f]||''}`;
-    };
-
-    const reqs = state.requests;
-    const counts = {
-        all: reqs.length,
-        new: reqs.filter(r=>getDevStatus(r)==='new').length,
-        proc: reqs.filter(r=>getDevStatus(r)==='proc').length,
-        ok: reqs.filter(r=>getDevStatus(r)==='ok').length,
-        warn: reqs.filter(r=>getDevStatus(r)==='warn').length,
-        crit: reqs.filter(r=>getDevStatus(r)==='crit').length,
-    };
-
-    return `
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;padding:16px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button class="filter-tab ${tabClass('all')}" onclick="setFilter('all')">Vše (${counts.all})</button>
-        <button class="filter-tab ${tabClass('new')}" onclick="setFilter('new')" style="${state.filterTol==='new'?'':''}">Nové (${counts.new})</button>
-        <button class="filter-tab ${tabClass('proc')}" onclick="setFilter('proc')">Zaměřuje se (${counts.proc})</button>
-        <button class="filter-tab ${tabClass('ok')}" onclick="setFilter('ok')">V toleranci (${counts.ok})</button>
-        <button class="filter-tab ${tabClass('warn')}" onclick="setFilter('warn')">Mimo toleranci (${counts.warn})</button>
-        <button class="filter-tab ${tabClass('crit')}" onclick="setFilter('crit')" style="color:var(--red)">⚠ Kritické (${counts.crit})</button>
-    </div>
-    <div class="dev-grid">
-        ${filtered.length === 0 ?
-            `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Žádné záznamy v tomto filtru</div></div>` :
-            filtered.map(renderCard).join('')
-        }
-    </div>`;
-}
-
 // ── MAIN RENDER ───────────────────────────────────────────────────
 function render() {
-    const root = document.getElementById('root');
+    const appEl = document.getElementById('app');
 
     if (state.isLoading) {
-        root.innerHTML = `<div class="spinner-full"><div style="text-align:center"><div class="spinner" style="margin:0 auto"></div><div class="spinner-text">Načítání BIM Dashboardu…</div></div></div>`;
+        appEl.innerHTML = `<div class="full-spinner"><div class="spinner"></div></div>`;
         return;
     }
 
-    if (!state.isAuthenticated) {
-        root.innerHTML = `
-        <div class="login-bg">
+    if (!state.isAuth) {
+        appEl.innerHTML = `
+        <div class="login-page">
+            <div class="login-icon-wrap">📐</div>
+            <div class="login-title">GEODET FIELD</div>
+            <div class="login-sub">Dispečerský přehled · Hlavní geodet</div>
             <div class="login-card">
-                <div class="login-logo">
-                    <div class="login-cube">⬡</div>
-                    <div>
-                        <div class="login-title">BIM Dashboard</div>
-                        <div class="login-role">BIM Koordinátor</div>
-                    </div>
-                </div>
-                <div class="login-desc">Správa geodetických zaměření z pohledu BIM — odchylky, tolerance, as-built dokumentace a BCF workflow.</div>
-                <div class="feature-pills">
-                    <span class="fpill">± Odchylky</span>
-                    <span class="fpill">BCF export</span>
-                    <span class="fpill">Trimble Connect</span>
-                    <span class="fpill">As-built coverage</span>
-                </div>
-                ${state.loginError ? `<div class="error-alert">${state.loginError}</div>` : ''}
+                ${state.loginError ? `<div class="error-box">${state.loginError}</div>` : ''}
                 <button class="google-btn" onclick="signInWithGoogle()">
-                    <svg width="19" height="19" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                    Přihlásit se pomocí Google
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Přihlásit se přes Google
                 </button>
-                <div class="login-note">ℹ️ Přístup pouze pro autorizované uživatele STRABAG</div>
+                <div class="login-note">Přístup pouze pro STRABAG</div>
             </div>
         </div>`;
         return;
     }
 
     const reqs = state.requests;
-    const crit = reqs.filter(r=>getDevStatus(r)==='crit').length;
-    const warn = reqs.filter(r=>getDevStatus(r)==='warn').length;
-    const nw   = reqs.filter(r=>getDevStatus(r)==='new').length;
+    const reviewCount  = reqs.filter(r => r.stav === 'Čeká na kontrolu').length;
+    const novyCount    = reqs.filter(r => r.stav === 'Nový').length;
     const userName = state.currentUser.displayName || state.currentUser.email;
-    const userInitial = userName.charAt(0).toUpperCase();
 
-    const pageTitle = { dashboard:'Dashboard', requests:'Zaměření & Odchylky' }[state.view] || 'Dashboard';
-    const filterLabels = { all:'Vše', new:'Nové', proc:'V procesu', ok:'V toleranci', warn:'Mimo toleranci', crit:'Kritické' };
+    const navItems = [
+        { view:'home',  icon:'⌂',  label:'Přehled'  },
+        { view:'tasks', icon:'☰',  label:'Úkoly'    },
+        { view:'team',  icon:'◉',  label:'Tým'      },
+    ];
 
-    root.innerHTML = `
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-cube">⬡</div>
-                    <div>
-                        <div class="logo-name">BIM Dashboard</div>
-                        <div class="logo-role">Koordinátor</div>
-                    </div>
+    appEl.innerHTML = `
+    <div id="app-inner">
+        <div class="topbar">
+            <div class="topbar-brand">
+                <div class="brand-icon">📐</div>
+                <div>
+                    <div class="brand-name">GEODET FIELD</div>
+                    <div class="brand-role">Hlavní geodet</div>
                 </div>
             </div>
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-label">Přehled</div>
-                    <button class="nav-btn ${state.view==='dashboard'?'active':''}" onclick="setView('dashboard')">
-                        <span class="ni">◈</span> Dashboard
-                    </button>
-                    <button class="nav-btn ${state.view==='requests'?'active':''}" onclick="setView('requests')">
-                        <span class="ni">⊟</span> Zaměření
-                        ${nw>0?`<span class="nav-chip chip-teal">${nw}</span>`:''}
-                    </button>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-label">Odchylky</div>
-                    <button class="nav-btn" onclick="setView('requests');setFilter('crit')">
-                        <span class="ni">✕</span> Kritické
-                        ${crit>0?`<span class="nav-chip chip-red">${crit}</span>`:''}
-                    </button>
-                    <button class="nav-btn" onclick="setView('requests');setFilter('warn')">
-                        <span class="ni">△</span> Mimo toleranci
-                        ${warn>0?`<span class="nav-chip chip-amber">${warn}</span>`:''}
-                    </button>
-                    <button class="nav-btn" onclick="setView('requests');setFilter('ok')">
-                        <span class="ni">✓</span> V toleranci
-                    </button>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-label">Akce</div>
-                    <button class="nav-btn" onclick="openBcfModal()">
-                        <span class="ni">📦</span> BCF Export
-                    </button>
-                    <button class="nav-btn" onclick="exportExcel()">
-                        <span class="ni">📥</span> Export XLSX
-                    </button>
-                    <button class="nav-btn" onclick="refreshData()">
-                        <span class="ni">↻</span> Obnovit data
-                    </button>
-                </div>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="user-row">
-                    <div class="user-ava">
-                        ${state.currentUser.photoURL ? `<img src="${state.currentUser.photoURL}" alt="">` : userInitial}
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">${userName.split(' ')[0]}</div>
-                        <div class="user-tag">BIM Koordinátor</div>
-                    </div>
-                    <button class="signout-btn" onclick="signOut()" title="Odhlásit">⏻</button>
-                </div>
+            <div class="topbar-right">
+                ${!isOnline ? `<span style="font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-lt);padding:4px 8px;border-radius:6px">OFFLINE</span>` : ''}
+                <button class="icon-btn ${reviewCount>0?'notif-dot':''}" onclick="refreshData()" title="Obnovit">↻</button>
+                <button class="icon-btn" onclick="signOut()" title="Odhlásit" style="font-size:14px;color:var(--text3)">⏻</button>
             </div>
-        </aside>
+        </div>
 
-        <main class="main">
-            <div class="topbar">
-                <div class="topbar-left">
-                    <div>
-                        <div class="breadcrumb">BIM / <span>${pageTitle}${state.view==='requests'&&state.filterTol!=='all' ? ' / '+filterLabels[state.filterTol]:''}</span></div>
-                    </div>
-                </div>
-                <div class="topbar-right">
-                    ${crit > 0 ? `<span style="background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.3);font-size:12px;font-family:var(--font-mono);font-weight:700;padding:5px 12px;border-radius:7px">⚠ ${crit} kritická odchylka${crit>1?'':''}!</span>` : ''}
-                    <button class="btn btn-teal" onclick="openNewReqModal()">⊕ Nový požadavek</button>
-                </div>
-            </div>
+        <div class="content">
+            ${state.loading && state.requests.length === 0 ?
+                `<div style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div>` :
+              state.view === 'home'  ? renderHome()  :
+              state.view === 'tasks' ? renderTasks() :
+              state.view === 'team'  ? renderTeam()  : ''}
+        </div>
 
-            <div class="page-content">
-                ${state.loading ? `<div style="text-align:center;padding:60px"><div class="spinner" style="margin:0 auto"></div><div class="spinner-text" style="margin-top:12px">Načítám data…</div></div>` :
-                  state.view === 'dashboard' ? renderDashboard() : renderRequests()
-                }
-            </div>
-        </main>
+        <nav class="bottom-nav">
+            ${navItems.map(({view,icon,label}) => `
+                <button class="bnav-item ${state.view===view?'active':''}" onclick="setView('${view}')">
+                    ${view==='tasks' && novyCount > 0 ? `<span class="bnav-badge">${novyCount}</span>` : ''}
+                    ${view==='tasks' && reviewCount > 0 ? `<span class="bnav-badge" style="background:var(--purple)">${reviewCount}</span>` : ''}
+                    <span class="bnav-icon">${icon}</span>
+                    ${label}
+                </button>`).join('')}
+            <button class="bnav-item" onclick="openNewTask()">
+                <span class="bnav-icon">＋</span>
+                Ad-hoc
+            </button>
+        </nav>
     </div>`;
 
-    // Bind window functions
-    window.refreshData = loadRequests;
-    window.setView = function(v) { state.view=v; state.filterTol='all'; render(); };
-    window.setFilter = function(f) { state.filterTol=f; state.view='requests'; render(); };
-
-    if (state.view === 'dashboard' && reqs.length > 0) {
-        requestAnimationFrame(() => renderCharts());
-    }
+    window.setView   = function(v) { state.view=v; state.filter='all'; render(); };
+    window.setFilter = function(f) { state.filterTol=f; state.filter=f; render(); };
 }
 
 render();
